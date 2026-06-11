@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useOnline } from './hooks/useOnline'
 import { useRouter } from 'next/navigation'
 import { useStore } from './store'
 import DropsPanel from './components/DropsPanel'
@@ -16,6 +17,15 @@ export default function Home() {
   const router = useRouter()
   const { balance, steamUser, setSteamUser } = useStore()
   const [activeFilter, setActiveFilter] = useState('Все')
+  const online = useOnline()
+  const [totalOpened, setTotalOpened] = useState(0)
+
+useEffect(() => {
+  fetch('/api/drops')
+    .then(r => r.json())
+    .then(data => setTotalOpened(data.total))
+    .catch(() => {})
+}, [])
   useEffect(() => {
   const cookies = document.cookie.split(';')
   const steamCookie = cookies.find(c => c.trim().startsWith('steam_user='))
@@ -268,12 +278,12 @@ export default function Home() {
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#e94560', display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
-                    54<span style={{ fontSize: '14px', color: '#4caf50' }}>●</span>
+                    {online}<span style={{ fontSize: '14px', color: '#4caf50' }}>●</span>
                   </div>
                   <div style={{ fontSize: '13px', color: '#888' }}>Игроков онлайн</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#e94560' }}>1 298</div>
+                  <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#e94560' }}>{totalOpened}</div>
                   <div style={{ fontSize: '13px', color: '#888' }}>Открытий</div>
                 </div>
               </div>

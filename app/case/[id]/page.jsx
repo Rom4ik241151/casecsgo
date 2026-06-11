@@ -326,6 +326,21 @@ export default function CasePage() {
       setDone(true)
       setResults(wonItems)
       wonItems.forEach(item => addDrop(item, caseData.name))
+
+// Записываем открытия в БД
+wonItems.forEach(item => {
+  fetch('/api/drops', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: item.name,
+      price: item.price,
+      color: item.color,
+      caseName: caseData.name,
+      steamId: useStore.getState().steamUser?.steamId || null
+    })
+  }).catch(() => {})
+})
       const hasJackpot = wonItems.some(i => i.rarity === 'Контрабанда')
       const hasRare = wonItems.some(i => i.rarity === 'Тайное' || i.rarity === 'Засекреченное')
       if (hasJackpot) playSound('jackpot')

@@ -14,7 +14,8 @@ model User {
   avatar      String?
   balance     Int      @default(1000)
   totalWon    Int      @default(0)
-  createdAt   DateTime @default(now())
+    createdAt   DateTime @default(now())
+  lastSeen    DateTime @default(now())
   inventory   InventoryItem[]
   drops       Drop[]
 }
@@ -40,4 +41,8 @@ model Drop {
   caseName  String
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
+}
+model Visitor {
+  id        String   @id
+  lastSeen  DateTime @default(now())
 }
