@@ -1,15 +1,16 @@
 import { NextRequest } from 'next/server'
 
-const clients = new Set<ReadableStreamDefaultController>()
+const clients = new Map<string, ReadableStreamDefaultController>()
 
 export async function GET(req: NextRequest) {
+  const id = Math.random().toString(36).slice(2)
   const stream = new ReadableStream({
     start(controller) {
-      clients.add(controller)
+      clients.set(id, controller)
       controller.enqueue(new TextEncoder().encode(`data: ${clients.size}\n\n`))
       broadcast()
       req.signal.addEventListener('abort', () => {
-        clients.delete(controller)
+        clients.delete(id)
         broadcast()
         try { controller.close() } catch {}
       })
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
 
 function broadcast() {
   const data = new TextEncoder().encode(`data: ${clients.size}\n\n`)
-  for (const client of clients) {
-    try { client.enqueue(data) } catch { clients.delete(client) }
-  }
+  clients.forEach((client, id) => {
+    try { client.enqueue(data) } catch { clients.delete(id) }
+  })
 }
