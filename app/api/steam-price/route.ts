@@ -41,7 +41,7 @@ const PRICES: Record<string, number> = {
   'Gut Knife | Safari Mesh': 2000, 'Gut Knife | Boreal Forest': 1800, 'Gut Knife | Urban Masked': 1600,
   'Gut Knife | Scorched': 1500,
   'Bayonet | Doppler': 12000, 'Bayonet | Tiger Tooth': 9000, 'Bayonet | Marble Fade': 11000,
-  'Bayonet | Forest DDPAT': 5000, 'Bayonet | Tiger Tooth': 9000,
+  'Bayonet | Forest DDPAT': 5000, 
   'M9 Bayonet | Doppler': 18000, 'M9 Bayonet | Tiger Tooth': 14000, 'M9 Bayonet | Slaughter': 12000,
   'Shadow Daggers | Forest DDPAT': 2000, 'Shadow Daggers | Safari Mesh': 1800,
   'Navaja Knife | Forest DDPAT': 2000, 'Navaja Knife | Safari Mesh': 1800,

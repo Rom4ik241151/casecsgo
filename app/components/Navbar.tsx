@@ -8,7 +8,7 @@ export default function Navbar() {
   const router = useRouter()
   const { balance, drops, inventory } = useStore()
   const [profileOpen, setProfileOpen] = useState(false)
-  const totalWon = drops.reduce((sum, d) => sum + d.price, 0)
+  const totalWon = drops.reduce((sum: number, d: any) => sum + d.price, 0)
 
   return (
     <nav className="navbar">

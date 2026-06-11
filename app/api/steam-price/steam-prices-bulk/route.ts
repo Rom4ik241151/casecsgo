@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GET } from '../steam-price/route'
+
 
 export async function POST(request: NextRequest) {
   const { names } = await request.json()

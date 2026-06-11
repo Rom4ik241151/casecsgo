@@ -13,11 +13,11 @@ export default function ProfilePage() {
   }
 
   function sellAll() {
-    inventory.forEach(item => sellItem(item))
-    inventory.forEach(item => removeFromInventory(item.uid))
+    inventory.forEach((item: any) => sellItem(item))
+inventory.forEach((item: any) => removeFromInventory(item.uid))
   }
 
-  const inventoryValue = inventory.reduce((sum, i) => sum + i.price, 0)
+  const inventoryValue = inventory.reduce((sum: number, i: any) => sum + i.price, 0)
 
   return (
     <main style={{ minHeight: '100vh', background: '#0f1021', color: 'white', fontFamily: 'sans-serif' }}>
