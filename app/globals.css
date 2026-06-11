@@ -1,0 +1,200 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --red: #e84b6a;
+  --red-dark: #c0392b;
+  --purple: #8847ff;
+  --blue: #4b9de8;
+  --bg: #080b18;
+  --bg2: #0d1128;
+  --bg3: #111830;
+  --card: #131a2e;
+  --card2: #16213e;
+  --border: #1e2a4a;
+  --text: #ffffff;
+  --muted: #5a6a8a;
+}
+
+body {
+  background-image: url('/bg.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  color: #ffffff;
+  font-family: 'Arial', sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Скроллбар */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--red); }
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* NAVBAR */
+.navbar {
+  background: rgba(8,11,24,0.95);
+  backdrop-filter: blur(12px);
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 60px;
+  display: flex;
+  align-items: center;
+}
+
+.navbar-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--red);
+  letter-spacing: -0.5px;
+}
+
+/* BUTTONS */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--red), var(--red-dark));
+  color: white;
+  box-shadow: 0 4px 15px rgba(232,75,106,0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(232,75,106,0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* CASES GRID */
+.cases-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 20px 0;
+}
+
+.case-card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 20px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.case-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--red), var(--purple));
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.case-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(232,75,106,0.4);
+  box-shadow: 0 8px 30px rgba(232,75,106,0.15);
+}
+
+.case-card:hover::before {
+  opacity: 1;
+}
+
+.case-card img {
+  width: 130px;
+  height: 130px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(232,75,106,0.2));
+}
+
+.case-card h3 {
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.case-card .price {
+  color: var(--red);
+  font-size: 16px;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+/* GLOW эффекты */
+.glow-red { box-shadow: 0 0 20px rgba(232,75,106,0.3); }
+.glow-purple { box-shadow: 0 0 20px rgba(136,71,255,0.3); }
+.glow-blue { box-shadow: 0 0 20px rgba(75,157,232,0.3); }
+
+/* Анимации */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade { animation: fadeIn 0.3s ease; }
+.animate-slide { animation: slideIn 0.3s ease; }
+.animate-pulse { animation: pulse 2s infinite; }
+
+/* Бейджи редкости */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.badge-red { background: rgba(232,75,106,0.2); color: var(--red); border: 1px solid rgba(232,75,106,0.3); }
+.badge-purple { background: rgba(136,71,255,0.2); color: var(--purple); border: 1px solid rgba(136,71,255,0.3); }
+.badge-blue { background: rgba(75,157,232,0.2); color: var(--blue); border: 1px solid rgba(75,157,232,0.3); }
+.badge-gold { background: rgba(228,174,57,0.2); color: #e4ae39; border: 1px solid rgba(228,174,57,0.3); }

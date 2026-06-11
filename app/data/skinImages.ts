@@ -1,0 +1,13 @@
+export const SKIN_IMAGES: Record<string, string> = {
+  'AK-47 | Fire Serpent': 'https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I4D0MuvMkJVg5C5dHlBqTM7fxEaTBSGRFSmtcTv-Rpob4moSXVU8udlRiZaCkeFUy1KaZJmlD7diyhNaJkun0Zu3VZ2pT6dAlj7uTz4r3i1aw_RVpYmigddeLMlhpKVOd8w',
+  'AWP | Dragon Lore': 'https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I4D0MuvMkJVg5C5dHlBqTM7fxEaTBSGRFSmtcTv-Rpob4moSXVU8udlRiZaCkeFUy1KaZJmlD7dijwIaJkuniYu3VZ2pT6dAlj7uTpd6t3wLq_RVpYm2-iddcMlhpKq4ctMpc',
+  'Karambit | Fade': 'https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I4D0MuvMkJVg5C5dHlBqTM7fxEaTBSGRFSmtcTv-Rpob4moSXVU8udlRiZaCkeFUy1KaZJmlD7dijwIaJkuniYu3VZ2pT6dAlj7uTpd6t3wLq_RVpYm2-iddcMlhpKq4ctMpQ',
+  'Desert Eagle | Blaze': 'https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I4D0MuvMkJVg5C5dHlBqTM7fxEaTBSGRFSmtcTv-Rpob4moSXVU8udlRiZaCkeFUy1KaZJmlD7dijwIaJkuniYu3VZ2pT6dAlj7uTpd6t3wLq_RVpYm2-iddcMlhpKq4ctMpY',
+  'M4A4 | Howl': 'https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I4D0MuvMkJVg5C5dHlBqTM7fxEaTBSGRFSmtcTv-Rpob4moSXVU8udlRiZaCkeFWZVf2yMntB3oDOTj-ahn6jl7e2MmpZxhQFjvuoo4up0Yy3rg8xZzLT9dSKMlhpKQhQFmU',
+  'AK-47 | Redline': 'https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I4D0MuvMkJVg5C5dHlBqTM7fxEaTBSGRFSmtcTv-Rpob4moSXVU8udlRiZaCkeFUy1KaZJmlD7dijwIaJkuniYu3VZ2pT6dAlj7uTpd6t3wLq_RVpYm2-iddcMlhpKq4ctMpQ',
+  'AWP | Asiimov': 'https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I4D0MuvMkJVg5C5dHlBqTM7fxEaTBSGRFSmtcTv-Rpob4moSXVU8udlRiZaCkeFUy1KaZJmlD7dijwIaJkuniYu3VZ2pT6dAlj7uTpd6t3wLq_RVpYm2-iddcMlhpKq4ctMpZ',
+  'USP-S | Kill Confirmed': 'https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I4D0MuvMkJVg5C5dHlBqTM7fxEaTBSGRFSmtcTv-Rpob4moSXVU8udlRiZaCkeFUy1KaZJmlD7dijwIaJkuniYu3VZ2pT6dAlj7uTpd6t3wLq_RVpYm2-iddcMlhpKq4ctMpX',
+  'Glock-18 | Fade': 'https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I4D0MuvMkJVg5C5dHlBqTM7fxEaTBSGRFSmtcTv-Rpob4moSXVU8udlRiZaCkeFUy1KaZJmlD7dijwIaJkuniYu3VZ2pT6dAlj7uTpd6t3wLq_RVpYm2-iddcMlhpKq4ctMpW',
+}
+
+export const getSkinImage = (name: string): string => SKIN_IMAGES[name] || ''

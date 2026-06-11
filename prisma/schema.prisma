@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  steamId     String?  @unique
+  username    String   @default("Игрок")
+  avatar      String?
+  balance     Int      @default(1000)
+  totalWon    Int      @default(0)
+  createdAt   DateTime @default(now())
+  inventory   InventoryItem[]
+  drops       Drop[]
+}
+
+model InventoryItem {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  rarity    String
+  price     Int
+  color     String
+  caseName  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Drop {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  price     Int
+  color     String
+  caseName  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
