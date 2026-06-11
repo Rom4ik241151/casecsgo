@@ -3,12 +3,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useStore } from '../../store'
+
 function playSound(type) {
   if (typeof window === 'undefined') return
-  
   const audio = new Audio('/sounds/go-new-gambling.mp3')
   audio.volume = 0.4
-  
   switch(type) {
     case 'spin':
       audio.play().catch(e => console.log('Sound error:', e))
@@ -20,7 +19,6 @@ function playSound(type) {
     case 'jackpot':
       audio.volume = 0.6
       audio.play().catch(e => console.log('Sound error:', e))
-      // эффект двойного звука
       setTimeout(() => {
         const audio2 = new Audio('/sounds/go-new-gambling.mp3')
         audio2.volume = 0.5
@@ -30,12 +28,9 @@ function playSound(type) {
   }
 }
 
-  
-  
-
 const allCases = [
   {
-    id: 1, name: 'Кейс Пистолет', price: 50, color: '#e94560',
+    id: 1, name: 'Древний Свиток', price: 39, color: '#cd853f', image: '/cases/Ancient-Scroll-Case.png',
     items: [
       { id: 1, name: 'Glock-18 | Steel Disruption', rarity: 'Ширпотреб', price: 12, chance: 10, color: '#b0b0b0' },
       { id: 2, name: 'P250 | Sand Dune', rarity: 'Ширпотреб', price: 10, chance: 10, color: '#b0b0b0' },
@@ -62,7 +57,7 @@ const allCases = [
     ]
   },
   {
-    id: 2, name: 'Кейс Оружие', price: 100, color: '#0f3460',
+    id: 2, name: 'Замерзший Реликт', price: 79, color: '#00ced1', image: '/cases/Frozen-Relic-Case.png',
     items: [
       { id: 1, name: 'MAC-10 | Indigo', rarity: 'Ширпотреб', price: 20, chance: 9, color: '#b0b0b0' },
       { id: 2, name: 'MP9 | Sand Scale', rarity: 'Ширпотреб', price: 18, chance: 9, color: '#b0b0b0' },
@@ -90,7 +85,7 @@ const allCases = [
     ]
   },
   {
-    id: 3, name: 'Кейс Нож', price: 250, color: '#533483',
+    id: 3, name: 'Лунная Сакура', price: 129, color: '#da70d6', image: '/cases/Moon-Sakura-Case.png',
     items: [
       { id: 1, name: 'Gut Knife | Forest DDPAT', rarity: 'Тайное', price: 1500, chance: 10, color: '#d32ce6' },
       { id: 2, name: 'Gut Knife | Safari Mesh', rarity: 'Тайное', price: 1400, chance: 9, color: '#d32ce6' },
@@ -117,7 +112,7 @@ const allCases = [
     ]
   },
   {
-    id: 4, name: 'Кейс Редкий', price: 500, color: '#eb4b4b',
+    id: 4, name: 'Неоновое Ядро', price: 199, color: '#00ff7f', image: '/cases/Neon-Core-Case.png',
     items: [
       { id: 1, name: 'AK-47 | Safari Mesh', rarity: 'Ширпотреб', price: 30, chance: 8, color: '#b0b0b0' },
       { id: 2, name: 'M4A4 | Desert Storm', rarity: 'Ширпотреб', price: 25, chance: 8, color: '#b0b0b0' },
@@ -157,7 +152,7 @@ function getRandomItem(items) {
 }
 
 const ITEM_GAP = 8
-const WINNER_POS = 48
+const WINNER_POS = 35
 
 function generateStrip(items, winner) {
   const strip = []
@@ -168,8 +163,10 @@ function generateStrip(items, winner) {
   return strip
 }
 
-function Roulette({ items, winner, spinning, fastMode, done, count }) {
+function Roulette({ items, winner, spinning, fastMode, done, count, caseColor }) {
   const SPIN_DURATION = fastMode ? 1500 : 6000
+  const spinRef = useRef(SPIN_DURATION)
+  useEffect(() => { spinRef.current = SPIN_DURATION }, [fastMode])
   const height = count === 1 ? 180 : count <= 3 ? 130 : 90
   const itemW = count === 1 ? 160 : count <= 3 ? 120 : 85
   const fontSize = count === 1 ? 36 : count <= 3 ? 28 : 20
@@ -177,13 +174,15 @@ function Roulette({ items, winner, spinning, fastMode, done, count }) {
   const itemH = height - 30
 
   function calcTarget() {
-    return WINNER_POS * (itemW + ITEM_GAP) - 160
-  }
-
+  const containerWidth = containerRef.current?.offsetWidth || 800
+  const randomOffset = (Math.random() - 0.5) * (itemW * 0.7)
+  return WINNER_POS * (itemW + ITEM_GAP) - containerWidth / 2 + itemW / 2 + randomOffset
+}
   const [strip, setStrip] = useState([])
   const [translateX, setTranslateX] = useState(0)
   const [animate, setAnimate] = useState(false)
   const [mounted, setMounted] = useState(false)
+    const containerRef = useRef(null)
 
   useEffect(() => {
     setStrip(generateStrip(items, items[0]))
@@ -192,7 +191,8 @@ function Roulette({ items, winner, spinning, fastMode, done, count }) {
 
   useEffect(() => {
     if (!spinning || !winner) return
-    const newStrip = generateStrip(items, winner)
+    const currentWinner = winner
+    const newStrip = generateStrip(items, currentWinner)
     setAnimate(false)
     setTranslateX(0)
     setTimeout(() => {
@@ -202,23 +202,44 @@ function Roulette({ items, winner, spinning, fastMode, done, count }) {
         setTranslateX(calcTarget())
       }, 50)
     }, 50)
-  }, [spinning])
+  }, [spinning, winner])
+
 
   return (
     <div style={{
-      position: 'relative', overflow: 'hidden', borderRadius: '10px',
-      height: `${height}px`, background: '#16213e', marginBottom: '8px'
-    }} suppressHydrationWarning>
+      position: 'relative', overflow: 'hidden', borderRadius: '12px',
+      height: `${height}px`,
+      background: 'rgba(22, 33, 62, 0.8)',
+      border: `1px solid ${caseColor}40`,
+      marginBottom: '8px',
+      boxShadow: `0 0 20px ${caseColor}20`
+      }} suppressHydrationWarning ref={containerRef}>
       <div style={{
         position: 'absolute', inset: 0,
-        background: 'linear-gradient(to right, #16213e 0%, transparent 20%, transparent 80%, #16213e 100%)',
+        background: 'linear-gradient(to right, rgba(26,26,46,0.95) 0%, transparent 15%, transparent 85%, rgba(26,26,46,0.95) 100%)',
         zIndex: 2, pointerEvents: 'none'
       }} />
       <div style={{
-        position: 'absolute', left: '50%', top: 0, bottom: 0,
-        width: '2px', background: '#e94560', zIndex: 3,
-        transform: 'translateX(-50%)'
+        position: 'absolute', left: '50%', top: '0px',
+        transform: 'translateX(-50%)',
+        zIndex: 10,
+        width: 0, height: 0,
+        borderLeft: '14px solid transparent',
+        borderRight: '14px solid transparent',
+        borderTop: `18px solid #e94560`,
+        filter: 'drop-shadow(0 0 6px #e94560)',
       }} />
+      <div style={{
+        position: 'absolute', left: '50%', bottom: '0px',
+        transform: 'translateX(-50%)',
+        zIndex: 10,
+        width: 0, height: 0,
+        borderLeft: '14px solid transparent',
+        borderRight: '14px solid transparent',
+        borderBottom: `18px solid #e94560`,
+        filter: 'drop-shadow(0 0 6px #e94560)',
+      }} />
+      
       <div style={{
         display: 'flex', gap: `${ITEM_GAP}px`,
         transform: `translateX(-${translateX}px)`,
@@ -228,12 +249,18 @@ function Roulette({ items, winner, spinning, fastMode, done, count }) {
       }}>
         {strip.map((item, i) => (
           <div key={i} style={{
-            minWidth: `${itemW}px`, height: `${itemH}px`,
-            background: i === WINNER_POS && done ? '#1a3a6e' : '#0f3460',
+            width: `${itemW}px`,
+minWidth: `${itemW}px`,
+flexShrink: 0, height: `${itemH}px`,
+            background: i === WINNER_POS && done
+              ? `linear-gradient(135deg, rgba(22,33,62,0.9), ${item.color}30)`
+              : 'rgba(15,52,96,0.6)',
             borderRadius: '8px', display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
             borderBottom: `3px solid ${item.color}`,
-            padding: '6px', flexShrink: 0
+            border: i === WINNER_POS && done ? `1px solid ${item.color}` : '1px solid rgba(255,255,255,0.05)',
+            padding: '6px', flexShrink: 0,
+            transition: 'all 0.3s ease'
           }}>
             <div style={{ fontSize: `${fontSize}px`, marginBottom: '4px' }}>🔫</div>
             <p style={{ fontSize: `${textSize}px`, textAlign: 'center', color: item.color, fontWeight: 'bold', lineHeight: 1.2 }}>{item.name}</p>
@@ -255,23 +282,20 @@ export default function CasePage() {
   useEffect(() => {
     if (fetchedRef.current) return
     fetchedRef.current = true
-
     const names = items.map(i => i.name)
-    fetch('/api/steam-prices-bulk', {
+    fetch('/api/steam-price/steam-prices-bulk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ names })
     })
       .then(r => r.json())
-      .then(data => {
-        if (data.prices) setSteamPrices(data.prices)
-      })
+      .then(data => { if (data.prices) setSteamPrices(data.prices) })
       .catch(() => {})
   }, [])
 
   const getPrice = (item) => steamPrices[item.name] ?? item.price
 
-  const { balance, addBalance, addDrop, sellItem, addToInventory } = useStore()
+  const { balance, addBalance, addDrop, sellItem, addToInventory, steamUser, setSteamUser } = useStore()
   const [spinning, setSpinning] = useState(false)
   const [fastMode, setFastMode] = useState(false)
   const [multiCount, setMultiCount] = useState(1)
@@ -296,144 +320,259 @@ export default function CasePage() {
     setActiveCount(multiCount)
     setWinners(wonItems)
     playSound('spin')
-    setSpinning(true)
+    setTimeout(() => setSpinning(true), 50)
     setTimeout(() => {
       setSpinning(false)
       setDone(true)
       setResults(wonItems)
       wonItems.forEach(item => addDrop(item, caseData.name))
       const hasJackpot = wonItems.some(i => i.rarity === 'Контрабанда')
-const hasRare = wonItems.some(i => i.rarity === 'Тайное' || i.rarity === 'Засекреченное')
-if (hasJackpot) playSound('jackpot')
-else if (hasRare) playSound('win')
-    }, SPIN_DURATION + 100)
+      const hasRare = wonItems.some(i => i.rarity === 'Тайное' || i.rarity === 'Засекреченное')
+      if (hasJackpot) playSound('jackpot')
+      else if (hasRare) playSound('win')
+    }, (fastMode ? 1500 : 6000) + 500)
   }
 
   const maxCount = Math.min(10, Math.floor(balance / caseData.price))
 
   return (
     <main style={{ minHeight: '100vh', background: '#1a1a2e' }}>
-      <nav className="navbar">
-        <div className="container navbar-content">
-          <div className="logo" style={{ cursor: 'pointer' }} onClick={() => router.push('/')}>CaseCSGO</div>
-          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-            <span style={{ color: '#e94560', fontWeight: 'bold' }}>{balance} руб</span>
-          </div>
+      <style jsx global>{`
+        @keyframes fastShimmer {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .logo-glow {
+          background: linear-gradient(90deg, #ffffff 0%, #e94560 15%, #ff6b6b 30%, #e94560 45%, #ff6b6b 60%, #e94560 75%, #ffffff 100%);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          animation: fastShimmer 2.5s ease-in-out infinite;
+          font-weight: 800;
+        }
+        .spin-btn:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 30px rgba(233,69,96,0.6) !important;
+        }
+        .item-card:hover {
+          transform: translateY(-3px);
+        }
+      `}</style>
+
+      {/* Навбар */}
+      <nav style={{
+        background: 'rgba(22, 33, 62, 0.95)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(233,69,96,0.3)',
+        padding: '0 30px',
+        height: '80px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100
+      }}>
+        <div
+          onClick={() => router.push('/')}
+          style={{ cursor: 'pointer', fontSize: '44px', fontWeight: '800', letterSpacing: '-1px', padding: '8px 0' }}
+          className="logo-glow"
+        >
+          OtakuCase
         </div>
-      </nav>
 
-      <div className="container" style={{ paddingTop: '40px' }}>
-        <button onClick={() => router.push('/')} style={{
-          background: 'transparent', border: '1px solid #444',
-          color: '#888', padding: '8px 16px', borderRadius: '6px',
-          cursor: 'pointer', marginBottom: '30px'
-        }}>← Назад</button>
-
-        <h1 style={{ textAlign: 'center', fontSize: '28px', marginBottom: '10px' }}>{caseData.name}</h1>
-        <p style={{ textAlign: 'center', color: '#888', marginBottom: '20px' }}>Цена открытия: {caseData.price} руб</p>
-
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '15px' }}>
-          <button onClick={() => setFastMode(false)} style={{
-            padding: '8px 20px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-            background: !fastMode ? '#e94560' : '#16213e', color: 'white', fontWeight: 'bold'
-          }}>Обычный</button>
-          <button onClick={() => setFastMode(true)} style={{
-            padding: '8px 20px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-            background: fastMode ? '#e94560' : '#16213e', color: 'white', fontWeight: 'bold'
-          }}>Быстрый</button>
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '20px' }}>
-          {[1, 2, 3, 5, 10].map(n => (
-            <button key={n} onClick={() => setMultiCount(n)} disabled={n > maxCount} style={{
-              padding: '6px 16px', borderRadius: '6px', border: 'none',
-              cursor: n > maxCount ? 'not-allowed' : 'pointer',
-              background: multiCount === n ? '#e94560' : '#16213e',
-              color: n > maxCount ? '#555' : 'white', fontWeight: 'bold'
-            }}>x{n}</button>
+        <div style={{ display: 'flex', gap: '40px' }}>
+          {['Кейсы', 'Апгрейд', 'Рулетка', 'Контракты'].map(item => (
+            <span key={item} style={{ color: '#aaa', cursor: 'pointer', fontSize: '15px', fontWeight: '500' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#e94560'}
+              onMouseLeave={e => e.currentTarget.style.color = '#aaa'}
+            >{item}</span>
           ))}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'row', gap: '8px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+          <div style={{
+            background: 'rgba(233,69,96,0.12)', padding: '10px 24px',
+            borderRadius: '50px', border: '1px solid rgba(233,69,96,0.4)',
+            display: 'flex', alignItems: 'center', gap: '10px'
+          }}>
+            <span style={{ fontSize: '20px' }}>💰</span>
+            <span style={{ color: '#e94560', fontWeight: 'bold', fontSize: '20px', fontFamily: 'monospace' }}>
+              {balance.toLocaleString()} ₽
+            </span>
+          </div>
+          <button onClick={() => router.push('/profile')} style={{
+            background: 'linear-gradient(135deg, #e94560, #c73550)',
+            color: 'white', border: 'none', padding: '10px 24px',
+            borderRadius: '50px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px'
+          }}>👤 Профиль</button>
+        </div>
+      </nav>
+
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 30px' }}>
+
+        {/* Назад */}
+        <button onClick={() => router.push('/')} style={{
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          color: '#aaa', padding: '8px 20px', borderRadius: '30px',
+          cursor: 'pointer', marginBottom: '30px', fontSize: '13px',
+          transition: 'all 0.2s ease'
+        }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = '#aaa'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
+        >← Назад</button>
+
+        {/* Заголовок */}
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <img src={caseData.image} alt={caseData.name} style={{
+            width: '120px', height: '120px', objectFit: 'contain',
+            filter: `drop-shadow(0 0 30px ${caseData.color})`,
+            marginBottom: '15px'
+          }} />
+          <h1 style={{
+            fontSize: '36px', fontWeight: '800', marginBottom: '8px',
+            background: `linear-gradient(135deg, #fff, ${caseData.color})`,
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+          }}>{caseData.name}</h1>
+          <p style={{ color: '#888', fontSize: '15px' }}>Цена открытия: <span style={{ color: caseData.color, fontWeight: 'bold' }}>{caseData.price} ₽</span></p>
+        </div>
+
+        
+
+        {/* Рулетки */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: activeCount <= 3 ? `repeat(${activeCount}, 1fr)` : activeCount <= 6 ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)',
+          gap: '8px', marginBottom: '25px' 
+        }}>
           {Array.from({ length: activeCount }).map((_, i) => (
-            <div key={i} style={{ flex: 1, minWidth: 0 }}>
-              <Roulette
+            <div key={i} style={{ minWidth: 0 }}>
+              <Roulette 
                 items={items}
                 winner={winners[i] || null}
                 spinning={spinning}
                 fastMode={fastMode}
                 done={done}
-                count={activeCount}
+                count={activeCount <= 3 ? activeCount : activeCount <= 6 ? 3 : 5}
+                caseColor={caseData.color}
               />
             </div>
           ))}
         </div>
-
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <button onClick={spin} disabled={spinning} style={{
-            background: spinning ? '#444' : '#e94560',
-            color: 'white', border: 'none', padding: '16px 60px',
-            fontSize: '18px', fontWeight: 'bold', borderRadius: '8px',
-            cursor: spinning ? 'not-allowed' : 'pointer'
-          }}>
-            {spinning ? 'Крутится...' : `Открыть ${multiCount > 1 ? multiCount + 'x' : ''} за ${caseData.price * multiCount} руб`}
-          </button>
+      {/* Обычный / Быстрый */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '15px' }}>
+          {[['Обычный', false], ['Быстрый', true]].map(([label, fast]) => (
+            <button key={label} onClick={() => setFastMode(fast)} style={{
+              padding: '8px 28px', borderRadius: '30px', border: 'none', cursor: 'pointer', fontWeight: 'bold',
+              background: fastMode === fast ? `linear-gradient(135deg, #e94560, #c73550)` : 'rgba(255,255,255,0.05)',
+              color: fastMode === fast ? 'white' : '#aaa',
+              border: fastMode === fast ? 'none' : '1px solid rgba(255,255,255,0.1)',
+              transition: 'all 0.2s ease'
+            }}>{label}</button>
+          ))}
         </div>
 
+        {/* x1 x2 x3 x5 x10 */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '25px' }}>
+          {[1, 2, 3, 5, 10].map(n => (
+            <button key={n} onClick={() => setMultiCount(n)} disabled={n > maxCount} style={{
+              padding: '6px 18px', borderRadius: '30px', border: 'none',
+              cursor: n > maxCount ? 'not-allowed' : 'pointer', fontWeight: 'bold',
+              background: multiCount === n ? `linear-gradient(135deg, ${caseData.color}, ${caseData.color}aa)` : 'rgba(255,255,255,0.05)',
+              color: n > maxCount ? '#555' : multiCount === n ? 'white' : '#aaa',
+              border: multiCount === n ? 'none' : '1px solid rgba(255,255,255,0.1)',
+              transition: 'all 0.2s ease'
+            }}>x{n}</button>
+          ))}
+        </div>
+
+        {/* Кнопка открыть */}
+        <div style={{ textAlign: 'center', marginBottom: '35px' }}>
+          <button
+            className="spin-btn"
+            onClick={spin}
+            disabled={spinning}
+            style={{
+              background: spinning ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #e94560, #c73550)',
+              color: spinning ? '#666' : 'white',
+              border: 'none', padding: '16px 70px',
+              fontSize: '18px', fontWeight: 'bold', borderRadius: '50px',
+              cursor: spinning ? 'not-allowed' : 'pointer',
+              transition: 'all 0.3s ease',
+              boxShadow: spinning ? 'none' : '0 4px 20px rgba(233,69,96,0.4)'
+            }}
+          >
+            {spinning ? '⏳ Крутится...' : `🎰 Открыть ${multiCount > 1 ? multiCount + 'x ' : ''}за ${caseData.price * multiCount} ₽`}
+          </button>
+        </div>
+        
+
+        {/* Результаты */}
         {results.length > 0 && (
-          <div style={{ marginBottom: '40px' }}>
-            <h3 style={{ textAlign: 'center', marginBottom: '15px', color: '#888' }}>
-              {results.length > 1 ? 'Ваши выигрыши:' : 'Вы выиграли!'}
+          <div style={{ marginBottom: '50px' }}>
+            <h3 style={{ textAlign: 'center', marginBottom: '20px', color: '#aaa', fontSize: '18px' }}>
+              {results.length > 1 ? '🎁 Ваши выигрыши:' : '🎉 Вы выиграли!'}
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '15px', maxWidth: '900px', margin: '0 auto' }}>
               {results.map((item, i) => (
-                <div key={i} style={{
-                  textAlign: 'center', background: '#16213e',
-                  border: `2px solid ${item.color}`, borderRadius: '12px', padding: '20px'
+                <div key={i} className="item-card" style={{
+                  textAlign: 'center',
+                  background: `linear-gradient(135deg, rgba(22,33,62,0.9), ${item.color}20)`,
+                  border: `1px solid ${item.color}60`,
+                  borderRadius: '16px', padding: '20px',
+                  transition: 'all 0.3s ease',
+                  boxShadow: `0 4px 20px ${item.color}30`
                 }}>
                   <div style={{ fontSize: '40px', marginBottom: '8px' }}>🔫</div>
-                  <h3 style={{ color: item.color, fontSize: '13px', marginBottom: '6px' }}>{item.name}</h3>
-                  <p style={{ color: '#e94560', fontSize: '18px', fontWeight: 'bold' }}>{getPrice(item)} руб</p>
-                  <p style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>{item.rarity}</p>
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                  <h3 style={{ color: item.color, fontSize: '12px', marginBottom: '6px', fontWeight: 'bold' }}>{item.name}</h3>
+                  <p style={{ color: '#e94560', fontSize: '18px', fontWeight: 'bold' }}>{getPrice(item)} ₽</p>
+                  <p style={{ color: '#666', fontSize: '11px', marginTop: '4px' }}>{item.rarity}</p>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
                     <button onClick={() => {
                       sellItem(item)
                       setResults(prev => prev.filter((_, idx) => idx !== i))
                     }} style={{
-                      flex: 1, background: '#e94560', color: 'white', border: 'none',
-                      padding: '8px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold'
+                      flex: 1, background: 'linear-gradient(135deg, #e94560, #c73550)',
+                      color: 'white', border: 'none', padding: '8px',
+                      borderRadius: '20px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold'
                     }}>Продать</button>
                     <button onClick={() => {
                       addToInventory(item, caseData.name)
                       setResults(prev => prev.filter((_, idx) => idx !== i))
                     }} style={{
-                      flex: 1, background: '#16213e', color: 'white', border: '1px solid #444',
-                      padding: '8px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold'
+                      flex: 1, background: 'rgba(255,255,255,0.05)',
+                      color: '#aaa', border: '1px solid rgba(255,255,255,0.1)',
+                      padding: '8px', borderRadius: '20px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold'
                     }}>Оставить</button>
                   </div>
                 </div>
               ))}
             </div>
             {results.length > 1 && (
-              <p style={{ textAlign: 'center', marginTop: '15px', color: '#e94560', fontSize: '18px', fontWeight: 'bold' }}>
-                Итого: {results.reduce((sum, i) => sum + i.price, 0)} руб
+              <p style={{ textAlign: 'center', marginTop: '20px', color: '#e94560', fontSize: '20px', fontWeight: 'bold' }}>
+                💰 Итого: {results.reduce((sum, i) => sum + i.price, 0)} ₽
               </p>
             )}
           </div>
         )}
 
-        <h2 style={{ textAlign: 'center', marginBottom: '20px', color: '#888' }}>Содержимое кейса</h2>
+        {/* Содержимое кейса */}
+        <h2 style={{ textAlign: 'center', marginBottom: '25px', fontSize: '22px', color: '#aaa' }}>Содержимое кейса</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px', marginBottom: '60px' }}>
           {items.map(item => (
-            <div key={item.id} style={{
-              background: '#16213e', borderRadius: '8px',
-              padding: '12px', textAlign: 'center',
-              borderBottom: `3px solid ${item.color}`
+            <div key={item.id} className="item-card" style={{
+              background: `linear-gradient(135deg, rgba(22,33,62,0.8), ${item.color}15)`,
+              borderRadius: '12px', padding: '14px', textAlign: 'center',
+              border: `1px solid ${item.color}40`,
+              transition: 'all 0.3s ease'
             }}>
-              <div style={{ fontSize: '32px', marginBottom: '6px' }}>🔫</div>
-              <p style={{ fontSize: '11px', color: item.color, fontWeight: 'bold', marginBottom: '3px' }}>{item.name}</p>
-              <p style={{ fontSize: '11px', color: '#888' }}>{getPrice(item)} руб</p>
-              <p style={{ fontSize: '10px', color: '#555', marginTop: '2px' }}>{item.chance}%</p>
+              <div style={{ fontSize: '30px', marginBottom: '6px' }}>🔫</div>
+              <p style={{ fontSize: '11px', color: item.color, fontWeight: 'bold', marginBottom: '4px', lineHeight: 1.3 }}>{item.name}</p>
+              <p style={{ fontSize: '12px', color: '#e94560', fontWeight: 'bold' }}>{getPrice(item)} ₽</p>
+              <p style={{ fontSize: '10px', color: '#555', marginTop: '3px' }}>{item.chance}%</p>
             </div>
           ))}
         </div>
