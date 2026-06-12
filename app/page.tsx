@@ -69,8 +69,7 @@ export default function Home() {
         setSteamUser(user)
         window.history.replaceState({}, '', '/')
       } catch {}
-    }
-
+  }
     const cookies = document.cookie.split(';')
     const steamCookie = cookies.find(c => c.trim().startsWith('steam_user='))
     if (steamCookie) {
@@ -88,8 +87,27 @@ export default function Home() {
       } catch {}
     }
   }, [])
+useEffect(() => {
+    const syncBalance = () => {
+      const cookies = document.cookie.split(';')
+      const steamCookie = cookies.find(c => c.trim().startsWith('steam_user='))
+      if (!steamCookie) return
+      try {
+        const user = JSON.parse(decodeURIComponent(steamCookie.split('=')[1]))
+        fetch(`/api/user?steamId=${user.steamId}`)
+          .then(r => r.json())
+          .then(dbUser => {
+            if (dbUser?.balance !== undefined) useStore.setState({ balance: dbUser.balance })
+          })
+          .catch(() => {})
+      } catch {}
+    }
+    syncBalance()
+    const interval = setInterval(syncBalance, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
-  const filteredCases = cases.filter(c => {
+ const filteredCases = cases.filter(c => {
     if (activeFilter === 'Все') return true
     if (activeFilter === 'Дешёвые') return c.price < 70
     if (activeFilter === 'Средние') return c.price >= 70 && c.price < 150

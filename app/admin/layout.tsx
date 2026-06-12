@@ -5,9 +5,10 @@ import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 
 const NAV = [
-  { href: '/admin', label: '🏠 Главная', exact: true },
-  { href: '/admin/items', label: '🔫 Предметы' },
-  { href: '/admin/cases', label: '📦 Кейсы' },
+  { href: '/admin', label: ' Главная', exact: true },
+  { href: '/admin/items', label: ' Предметы' },
+  { href: '/admin/cases', label: ' Кейсы' },
+  { href: '/admin/players', label: ' Игроки' },
 ]
 
 const ADMIN_PASSWORD = 'pisun22221' // ← поменяй
