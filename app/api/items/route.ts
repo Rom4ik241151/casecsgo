@@ -19,7 +19,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { mode, url, name, image, price, marketHash } = body
+    const { mode, url, name, image, price, marketHash, rarity, statTrak, condition } = body
 
     if (mode === 'parse') {
       if (!url) return NextResponse.json({ error: 'Укажите ссылку' }, { status: 400 })
@@ -61,14 +61,17 @@ export async function POST(req: NextRequest) {
       }
 
       const item = await prisma.item.create({
-        data: {
-          name,
-          image,
-          price: price ?? 0,
-          marketHash: marketHash || null,
-          steamUrl: url || null,
-        },
-      })
+  data: {
+    name,
+    image,
+    price: price ?? 0,
+    marketHash: marketHash || null,
+    steamUrl: url || null,
+    rarity: rarity || 'Common',
+    statTrak: statTrak ?? false,
+    condition: condition || 'FT',
+  },
+})
 
       return NextResponse.json(item)
     }

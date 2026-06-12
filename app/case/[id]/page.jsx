@@ -354,6 +354,17 @@ else if (hasRare) playSound('win', muted, activeAudiosRef.current)
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
+          @keyframes mutePulse {
+  0% { box-shadow: 0 0 0 0 rgba(233,69,96,0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(233,69,96,0); }
+  100% { box-shadow: 0 0 0 0 rgba(233,69,96,0); }
+  
+}
+  @keyframes caseFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+.case-float { animation: caseFloat 3s ease-in-out infinite; }
         .logo-glow {
           background: linear-gradient(90deg, #ffffff 0%, #e94560 15%, #ff6b6b 30%, #e94560 45%, #ff6b6b 60%, #e94560 75%, #ffffff 100%);
           background-size: 200% auto;
@@ -395,9 +406,31 @@ else if (hasRare) playSound('win', muted, activeAudiosRef.current)
               {balance.toLocaleString()} ₽
             </span>
           </div>
-          <button onClick={() => setMuted(m => !m)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#aaa', padding: '10px 16px', borderRadius: '50px', cursor: 'pointer', fontSize: '18px' }}>
-            {muted ? '🔇' : '🔊'}
-          </button>
+          <button
+  onClick={() => setMuted(m => !m)}
+  title={muted ? 'Включить звук' : 'Выключить звук'}
+  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.borderColor = muted ? 'rgba(233,69,96,0.7)' : 'rgba(255,255,255,0.3)' }}
+  onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = muted ? 'rgba(233,69,96,0.35)' : 'rgba(255,255,255,0.12)' }}
+  style={{
+    width: '44px', height: '44px', borderRadius: '50%', cursor: 'pointer',
+    fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transition: 'all 0.2s ease', position: 'relative', flexShrink: 0,
+    background: muted ? 'rgba(233,69,96,0.12)' : 'rgba(255,255,255,0.06)',
+    border: muted ? '1px solid rgba(233,69,96,0.35)' : '1px solid rgba(255,255,255,0.12)',
+    color: muted ? '#e94560' : '#ccc',
+    animation: muted ? 'none' : 'none',
+  }}
+>
+  {muted ? '🔇' : '🔊'}
+  {muted && (
+    <span style={{
+      position: 'absolute', top: '50%', left: '50%',
+      transform: 'translate(-50%, -50%) rotate(-45deg)',
+      width: '26px', height: '2px',
+      background: '#e94560', borderRadius: '2px', pointerEvents: 'none',
+    }} />
+  )}
+</button>
           <button onClick={() => router.push('/profile')} style={{ background: 'linear-gradient(135deg, #e94560, #c73550)', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '50px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>
             👤 Профиль
           </button>
@@ -411,7 +444,7 @@ else if (hasRare) playSound('win', muted, activeAudiosRef.current)
         >← Назад</button>
 
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <img src={caseData.image || FALLBACK_IMAGE} alt={caseData.name} style={{ width: '120px', height: '120px', objectFit: 'contain', filter: `drop-shadow(0 0 30px ${caseColor})`, marginBottom: '15px' }} />
+          <img src={caseData.image || FALLBACK_IMAGE} alt={caseData.name} className="case-float" style={{ width: '150px', height: '150px', objectFit: 'contain', filter: `drop-shadow(0 0 40px ${caseColor}) drop-shadow(0 0 80px ${caseColor}50)`, marginBottom: '20px' }} />
           <h1 style={{ fontSize: '36px', fontWeight: '800', marginBottom: '8px', background: `linear-gradient(135deg, #fff, ${caseColor})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{caseData.name}</h1>
           <p style={{ color: '#888', fontSize: '15px' }}>Цена открытия: <span style={{ color: caseColor, fontWeight: 'bold' }}>{caseData.price} ₽</span></p>
         </div>
@@ -433,7 +466,13 @@ else if (hasRare) playSound('win', muted, activeAudiosRef.current)
                 </div>
               ))}
             </div>
-
+<div style={{
+  background: 'rgba(22,33,62,0.6)',
+  border: '1px solid rgba(233,69,96,0.15)',
+  borderRadius: '20px',
+  padding: '24px',
+  marginBottom: '30px',
+}}></div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '15px' }}>
               {[['Обычный', false], ['Быстрый', true]].map(([label, fast]) => (
                 <button key={label} onClick={() => setFastMode(fast)} style={{
@@ -465,7 +504,7 @@ else if (hasRare) playSound('win', muted, activeAudiosRef.current)
                 cursor: spinning ? 'not-allowed' : 'pointer',
                 boxShadow: spinning ? 'none' : '0 4px 20px rgba(233,69,96,0.4)'
               }}>
-                {spinning ? '⏳ Крутится...' : `🎰 Открыть ${multiCount > 1 ? multiCount + 'x ' : ''}за ${caseData.price * multiCount} ₽`}
+                {spinning ? '⌛ Открываем...' : `🎁 Открыть${multiCount > 1 ? ' ' + multiCount + 'x' : ''} · ${(caseData.price * multiCount).toLocaleString()} ₽`}
               </button>
             </div>
 
@@ -544,8 +583,10 @@ addBalance(total)
               </div>
             )}
 
-            <h2 style={{ textAlign: 'center', marginBottom: '25px', fontSize: '22px', color: '#aaa' }}>Содержимое кейса</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px', marginBottom: '60px' }}>
+            <h2 style={{ textAlign: 'center', marginBottom: '25px', fontSize: '20px', color: '#888', letterSpacing: '2px', textTransform: 'uppercase', fontWeight: '600' }}>
+  <span style={{ borderBottom: '2px solid rgba(233,69,96,0.4)', paddingBottom: '8px' }}>Содержимое кейса</span>
+</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', marginBottom: '60px' }}>
               {items.map(item => {
                 const color = getColor(item)
                 return (

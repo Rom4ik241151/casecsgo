@@ -33,13 +33,13 @@ type Mode = 'list' | 'create' | 'edit'
 const proxyImage = (url: string) => `/api/image-proxy?url=${encodeURIComponent(url)}`
 
 const RARITIES = [
-  { label: 'Consumer (серый)', value: 'Consumer', color: '#b0b0b0' },
-  { label: 'Industrial (голубой)', value: 'Industrial', color: '#5e98d9' },
-  { label: 'Mil-Spec (синий)', value: 'Mil-Spec', color: '#4b69ff' },
-  { label: 'Restricted (фиолетовый)', value: 'Restricted', color: '#8847ff' },
-  { label: 'Classified (розовый)', value: 'Classified', color: '#d32ce6' },
-  { label: 'Covert (красный)', value: 'Covert', color: '#eb4b4b' },
-  { label: 'Contraband (золотой)', value: 'Contraband', color: '#e4ae39' },
+  { label: 'Common', value: 'Common', color: '#b0b0b0' },
+  { label: 'Industrial', value: 'Industrial', color: '#5e98d9' },
+  { label: 'Mil-Spec', value: 'Mil-Spec', color: '#4b69ff' },
+  { label: 'Restricted', value: 'Restricted', color: '#8847ff' },
+  { label: 'Classified', value: 'Classified', color: '#d32ce6' },
+  { label: 'Covert', value: 'Covert', color: '#eb4b4b' },
+  { label: 'Contraband', value: 'Contraband', color: '#e4ae39' },
 ]
 
 const rarityColor = (r?: string) => RARITIES.find(x => x.value === r)?.color ?? '#888'
@@ -60,10 +60,15 @@ export default function AdminCasesPage() {
   const [selectedItems, setSelectedItems] = useState<{ itemId: string; dropRate: number }[]>([])
 
   const [itemSearch, setItemSearch] = useState('')
+  const [itemSort, setItemSort] = useState<'name' | 'price_asc' | 'price_desc' | 'rarity'>('name')
+const [rarityFilter, setRarityFilter] = useState<string>('all')
   const [saveLoading, setSaveLoading] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [saveSuccess, setSaveSuccess] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+
+  const [localImages, setLocalImages] = useState<string[]>([])
+  const [imageMode, setImageMode] = useState<'url' | 'local'>('url')
 
   const fetchCases = async () => {
     const res = await fetch('/api/cases')
@@ -80,6 +85,7 @@ export default function AdminCasesPage() {
   useEffect(() => {
     fetchCases()
     fetchItems()
+    fetch('/api/local-images').then(r => r.json()).then(setLocalImages).catch(() => {})
   }, [])
 
   const resetForm = () => {
@@ -92,6 +98,7 @@ export default function AdminCasesPage() {
     setSaveError('')
     setSaveSuccess('')
     setEditingId(null)
+    setImageMode('url')
   }
 
   const handleEdit = (c: Case) => {
@@ -100,6 +107,8 @@ export default function AdminCasesPage() {
     setDescription(c.description || '')
     setPrice(c.price)
     setImageUrl(c.image || '')
+    // Если картинка локальная — сразу открываем вкладку "Из папки"
+    setImageMode(c.image?.startsWith('/cases/') ? 'local' : 'url')
     setSelectedItems(c.items.map(ci => ({ itemId: ci.itemId, dropRate: ci.dropRate })))
     setSaveError('')
     setSaveSuccess('')
@@ -160,11 +169,27 @@ export default function AdminCasesPage() {
     fetchCases()
   }
 
-  const filteredItems = allItems.filter(i =>
-    i.name.toLowerCase().includes(itemSearch.toLowerCase())
-  )
+  const filteredItems = allItems
+  .filter(i => i.name.toLowerCase().includes(itemSearch.toLowerCase()))
+  .filter(i => rarityFilter === 'all' || i.rarity === rarityFilter)
+  .sort((a, b) => {
+    if (itemSort === 'price_asc') return a.price - b.price
+    if (itemSort === 'price_desc') return b.price - a.price
+    if (itemSort === 'rarity') {
+      const order = RARITIES.map(r => r.value)
+      return order.indexOf(b.rarity || '') - order.indexOf(a.rarity || '')
+    }
+    return a.name.localeCompare(b.name)
+  })
 
   const totalDropRate = selectedItems.reduce((s, x) => s + x.dropRate, 0)
+
+  // Для превью: локальные картинки показываем напрямую, внешние — через прокси
+  const previewSrc = imageUrl
+    ? imageUrl.startsWith('/')
+      ? imageUrl
+      : proxyImage(imageUrl)
+    : null
 
   // ── ФОРМА ──
   if (mode === 'create' || mode === 'edit') {
@@ -200,9 +225,9 @@ export default function AdminCasesPage() {
               flexShrink: 0, overflow: 'hidden',
               border: '0.5px solid var(--color-border-tertiary)'
             }}>
-              {imageUrl ? (
+              {previewSrc ? (
                 <Image
-                  src={proxyImage(imageUrl)}
+                  src={previewSrc}
                   alt={name}
                   width={120}
                   height={120}
@@ -264,15 +289,76 @@ export default function AdminCasesPage() {
                   style={inputStyle}
                 />
               </div>
+
+              {/* Картинка кейса — URL или из папки */}
               <div>
-                <label style={{ fontSize: 13, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Ссылка на картинку кейса</label>
-                <input
-                  type="text"
-                  value={imageUrl}
-                  onChange={e => setImageUrl(e.target.value)}
-                  placeholder="https://..."
-                  style={inputStyle}
-                />
+                <label style={{ fontSize: 13, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Картинка кейса</label>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                  <button
+                    onClick={() => setImageMode('url')}
+                    style={{
+                      padding: '4px 12px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12,
+                      background: imageMode === 'url' ? '#4b69ff' : 'var(--color-background-secondary)',
+                      color: imageMode === 'url' ? '#fff' : 'var(--color-text-secondary)'
+                    }}
+                  >🔗 URL</button>
+                  <button
+                    onClick={() => setImageMode('local')}
+                    style={{
+                      padding: '4px 12px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12,
+                      background: imageMode === 'local' ? '#4b69ff' : 'var(--color-background-secondary)',
+                      color: imageMode === 'local' ? '#fff' : 'var(--color-text-secondary)'
+                    }}
+                  >🖼️ Из папки</button>
+                </div>
+
+                {imageMode === 'url' ? (
+                  <input
+                    type="text"
+                    value={imageUrl}
+                    onChange={e => setImageUrl(e.target.value)}
+                    placeholder="https://..."
+                    style={inputStyle}
+                  />
+                ) : (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))',
+                    gap: 6,
+                    maxHeight: 180,
+                    overflowY: 'auto',
+                    background: 'var(--color-background-secondary)',
+                    borderRadius: 8,
+                    padding: 8,
+                    border: '0.5px solid var(--color-border-tertiary)'
+                  }}>
+                    {localImages.length === 0 ? (
+                      <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', gridColumn: '1/-1', margin: 0 }}>
+                        Картинок нет в /public/cases
+                      </p>
+                    ) : localImages.map(src => (
+                      <div
+                        key={src}
+                        onClick={() => setImageUrl(src)}
+                        style={{
+                          border: imageUrl === src ? '2px solid #4b69ff' : '2px solid transparent',
+                          borderRadius: 8, overflow: 'hidden', cursor: 'pointer',
+                          background: 'rgba(0,0,0,0.2)',
+                          transition: 'border-color 0.15s ease'
+                        }}
+                      >
+                        <Image
+                          src={src}
+                          alt={src}
+                          width={72}
+                          height={56}
+                          style={{ objectFit: 'contain', width: '100%', height: 56, display: 'block' }}
+                          unoptimized
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -366,14 +452,62 @@ export default function AdminCasesPage() {
             )}
 
             {/* Поиск по всем предметам */}
-            <p style={{ margin: '0 0 0.5rem', fontSize: 13, color: 'var(--color-text-secondary)' }}>Добавить предметы из базы:</p>
-            <input
-              type="text"
-              value={itemSearch}
-              onChange={e => setItemSearch(e.target.value)}
-              placeholder="Поиск по названию..."
-              style={{ ...inputStyle, marginBottom: '0.75rem' }}
-            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+  <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-secondary)' }}>Добавить предметы из базы:</p>
+  {selectedItems.length > 1 && (
+    <button
+      onClick={() => {
+        const equal = parseFloat((100 / selectedItems.length).toFixed(1))
+        setSelectedItems(prev => prev.map(x => ({ ...x, dropRate: equal })))
+      }}
+      style={{
+        fontSize: 12, padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
+        background: 'rgba(75,105,255,0.15)', border: '0.5px solid #4b69ff66',
+        color: '#4b69ff'
+      }}
+    >⚖️ Поровну</button>
+  )}
+</div>
+
+<input
+  type="text"
+  value={itemSearch}
+  onChange={e => setItemSearch(e.target.value)}
+  placeholder="Поиск по названию..."
+  style={{ ...inputStyle, marginBottom: '0.5rem' }}
+/>
+
+{/* Фильтр по редкости */}
+<div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+  <button
+    onClick={() => setRarityFilter('all')}
+    style={{
+      fontSize: 11, padding: '3px 10px', borderRadius: 20, cursor: 'pointer', border: 'none',
+      background: rarityFilter === 'all' ? '#4b69ff' : 'var(--color-background-secondary)',
+      color: rarityFilter === 'all' ? '#fff' : 'var(--color-text-secondary)'
+    }}
+  >Все</button>
+  {RARITIES.map(r => (
+    <button key={r.value} onClick={() => setRarityFilter(rarityFilter === r.value ? 'all' : r.value)} style={{
+      fontSize: 11, padding: '3px 10px', borderRadius: 20, cursor: 'pointer',
+      border: `1px solid ${r.color}55`,
+      background: rarityFilter === r.value ? r.color : 'transparent',
+      color: rarityFilter === r.value ? '#fff' : r.color,
+    }}>{r.value}</button>
+  ))}
+</div>
+
+{/* Сортировка */}
+<div style={{ display: 'flex', gap: 4, marginBottom: '0.75rem' }}>
+  {([['name', 'А-Я'], ['price_asc', 'Цена ↑'], ['price_desc', 'Цена ↓'], ['rarity', 'Редкость']] as const).map(([val, label]) => (
+    <button key={val} onClick={() => setItemSort(val)} style={{
+      fontSize: 11, padding: '3px 10px', borderRadius: 6, cursor: 'pointer', border: 'none',
+      background: itemSort === val ? 'var(--color-background-secondary)' : 'transparent',
+      color: itemSort === val ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+      borderBottom: itemSort === val ? '2px solid #4b69ff' : '2px solid transparent',
+    }}>{label}</button>
+  ))}
+</div>
 
             {allItems.length === 0 ? (
               <p style={{ fontSize: 13, color: 'var(--color-text-tertiary)', textAlign: 'center', padding: '1rem' }}>
@@ -530,7 +664,7 @@ export default function AdminCasesPage() {
             }}>
               {c.image ? (
                 <Image
-                  src={proxyImage(c.image)}
+                  src={c.image.startsWith('/') ? c.image : proxyImage(c.image)}
                   alt={c.name}
                   width={120}
                   height={110}

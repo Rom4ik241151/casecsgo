@@ -58,6 +58,8 @@ model Item {
   color      String?  @default("#888888")
   steamUrl   String?  @unique
   marketHash String?  @unique
+  statTrak   Boolean  @default(false)
+  condition  String   @default("FT")
   createdAt  DateTime @default(now())
   caseItems  CaseItem[]
 }

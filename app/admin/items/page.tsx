@@ -11,6 +11,9 @@ interface Item {
   rarity?: string
   steamUrl?: string
   marketHash?: string
+   statTrak?: boolean 
+   condition?: string
+  
 }
 
 type Mode = 'list' | 'create' | 'edit'
@@ -18,13 +21,20 @@ type Mode = 'list' | 'create' | 'edit'
 const proxyImage = (url: string) => `/api/image-proxy?url=${encodeURIComponent(url)}`
 
 const RARITIES = [
-  { label: 'Consumer (серый)', value: 'Consumer', color: '#b0b0b0' },
-  { label: 'Industrial (голубой)', value: 'Industrial', color: '#5e98d9' },
-  { label: 'Mil-Spec (синий)', value: 'Mil-Spec', color: '#4b69ff' },
-  { label: 'Restricted (фиолетовый)', value: 'Restricted', color: '#8847ff' },
-  { label: 'Classified (розовый)', value: 'Classified', color: '#d32ce6' },
-  { label: 'Covert (красный)', value: 'Covert', color: '#eb4b4b' },
-  { label: 'Contraband (золотой)', value: 'Contraband', color: '#e4ae39' },
+  { label: 'Ширпотреб',    value: 'Consumer',   color: '#b0b0b0' },
+  { label: 'Промышленное', value: 'Industrial',  color: '#5e98d9' },
+  { label: 'Армейское',    value: 'Mil-Spec',    color: '#4b69ff' },
+  { label: 'Запрещённое',  value: 'Restricted',  color: '#8847ff' },
+  { label: 'Засекреченное',value: 'Classified',  color: '#d32ce6' },
+  { label: 'Тайное',       value: 'Covert',      color: '#eb4b4b' },
+  { label: 'Контрабанда',  value: 'Contraband',  color: '#e4ae39' },
+]
+const CONDITIONS = [
+  { label: 'Прямо с завода',           value: 'FN' },
+  { label: 'Немного поношенное',        value: 'MW' },
+  { label: 'После полевых испытаний',   value: 'FT' },
+  { label: 'Поношенное',               value: 'WW' },
+  { label: 'Закалённое в боях',         value: 'BS' },
 ]
 
 export default function AdminItemsPage() {
@@ -42,6 +52,8 @@ export default function AdminItemsPage() {
   const [price, setPrice] = useState(0)
   const [imageUrl, setImageUrl] = useState('')
   const [rarity, setRarity] = useState('Mil-Spec')
+  const [statTrak, setStatTrak] = useState(false)
+  const [condition, setCondition] = useState('FT')
   const [marketHash, setMarketHash] = useState('')
   const [step, setStep] = useState<1 | 2>(1)
 
@@ -61,6 +73,8 @@ export default function AdminItemsPage() {
   useEffect(() => { fetchItems() }, [])
 
   const resetForm = () => {
+    setCondition('FT')
+    setStatTrak(false)
     setSteamUrl('')
     setName('')
     setPrice(0)
@@ -115,13 +129,13 @@ export default function AdminItemsPage() {
         res = await fetch(`/api/items/${editingId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, image: imageUrl, price, rarity }),
+          body: JSON.stringify({ name, image: imageUrl, price, rarity, statTrak, condition }),
         })
       } else {
         res = await fetch('/api/items', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mode: 'save', url: steamUrl, name, image: imageUrl, price, marketHash, rarity }),
+          body: JSON.stringify({ mode: 'save', url: steamUrl, name, image: imageUrl, price, marketHash, rarity, statTrak, condition }),
         })
       }
       const data = await res.json()
@@ -140,6 +154,8 @@ export default function AdminItemsPage() {
   }
 
   const handleEdit = (item: Item) => {
+    setCondition(item.condition || 'FT')
+    setStatTrak(item.statTrak || false)
     setEditingId(item.id)
     setName(item.name)
     setPrice(item.price)
@@ -247,9 +263,16 @@ export default function AdminItemsPage() {
                 )}
               </div>
               <div>
-                <p style={{ margin: 0, fontWeight: 500, fontSize: 15 }}>{name || 'Название предмета'}</p>
-                <p style={{ margin: '0.25rem 0', fontSize: 13, color: rarityColor(rarity) }}>{rarity}</p>
-                <p style={{ margin: '0.25rem 0', fontSize: 18, fontWeight: 500 }}>{price} ₽</p>
+                <p style={{ margin: 0, fontWeight: 500, fontSize: 15 }}>
+  {statTrak && <span style={{ color: '#e4ae39' }}>StatTrak™ </span>}
+  {name || 'Название предмета'}
+</p>
+<p style={{ margin: '0.25rem 0', fontSize: 13, color: rarityColor(rarity) }}>
+  {RARITIES.find(x => x.value === rarity)?.label || rarity}
+</p>
+<p style={{ margin: '0.1rem 0', fontSize: 12, color: 'var(--color-text-secondary)' }}>
+  {CONDITIONS.find(c => c.value === condition)?.label || ''}
+</p>
               </div>
             </div>
 
@@ -285,29 +308,57 @@ export default function AdminItemsPage() {
                 </p>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ fontSize: 13, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Цена (₽)</label>
-                  <input
-                    type="number"
-                    value={price}
-                    onChange={e => setPrice(parseFloat(e.target.value) || 0)}
-                    style={{ width: '100%', padding: '0.6rem', fontSize: 14, boxSizing: 'border-box', borderRadius: 8, border: '0.5px solid var(--color-border-tertiary)', background: 'var(--color-background-secondary)', color: 'var(--color-text-primary)' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: 13, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Редкость</label>
-                  <select
-                    value={rarity}
-                    onChange={e => setRarity(e.target.value)}
-                    style={{ width: '100%', padding: '0.6rem', fontSize: 14, boxSizing: 'border-box', borderRadius: 8, border: '0.5px solid var(--color-border-tertiary)', background: 'var(--color-background-secondary)', color: 'var(--color-text-primary)' }}
-                  >
-                    {RARITIES.map(r => (
-                      <option key={r.value} value={r.value}>{r.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '1rem' }}>
+  <div>
+    <label style={{ fontSize: 13, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Цена (₽)</label>
+    <input
+      type="number"
+      value={price}
+      onChange={e => setPrice(parseFloat(e.target.value) || 0)}
+      style={{ width: '100%', padding: '0.6rem', fontSize: 14, boxSizing: 'border-box', borderRadius: 8, border: '0.5px solid var(--color-border-tertiary)', background: 'var(--color-background-secondary)', color: 'var(--color-text-primary)' }}
+    />
+  </div>
+  <div>
+    <label style={{ fontSize: 13, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Редкость</label>
+    <select
+      value={rarity}
+      onChange={e => setRarity(e.target.value)}
+      style={{ width: '100%', padding: '0.6rem', fontSize: 14, boxSizing: 'border-box', borderRadius: 8, border: '0.5px solid var(--color-border-tertiary)', background: 'var(--color-background-secondary)', color: 'var(--color-text-primary)' }}
+    >
+      {RARITIES.map(r => (
+        <option key={r.value} value={r.value}>{r.label}</option>
+      ))}
+    </select>
+  </div>
+  <div>
+    <label style={{ fontSize: 13, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Состояние</label>
+    <select
+      value={condition}
+      onChange={e => setCondition(e.target.value)}
+      style={{ width: '100%', padding: '0.6rem', fontSize: 14, boxSizing: 'border-box', borderRadius: 8, border: '0.5px solid var(--color-border-tertiary)', background: 'var(--color-background-secondary)', color: 'var(--color-text-primary)' }}
+    >
+      {CONDITIONS.map(c => (
+        <option key={c.value} value={c.value}>{c.label}</option>
+      ))}
+    </select>
+  </div>
+  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+    <label style={{ fontSize: 13, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>StatTrak™</label>
+    <button
+      onClick={() => setStatTrak(v => !v)}
+      style={{
+        padding: '0.6rem 1rem', borderRadius: 8, fontSize: 14, cursor: 'pointer',
+        border: statTrak ? '1px solid #e4ae39' : '0.5px solid var(--color-border-tertiary)',
+        background: statTrak ? 'rgba(228,174,57,0.15)' : 'var(--color-background-secondary)',
+        color: statTrak ? '#e4ae39' : 'var(--color-text-secondary)',
+        fontWeight: statTrak ? 600 : 400,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {statTrak ? '✓ StatTrak™' : 'StatTrak™'}
+    </button>
+  </div>
+</div>
 
               {saveError && <p style={{ color: '#eb4b4b', fontSize: 13, margin: 0 }}>{saveError}</p>}
               {saveSuccess && <p style={{ color: '#4caf50', fontSize: 13, margin: 0 }}>{saveSuccess}</p>}
@@ -389,7 +440,13 @@ export default function AdminItemsPage() {
               <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 500, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                 {item.name}
               </p>
-              <p style={{ margin: '0 0 6px', fontSize: 12, color: rarityColor(item.rarity) }}>{item.rarity}</p>
+              <p style={{ margin: '0 0 2px', fontSize: 12, color: rarityColor(item.rarity) }}>
+  {item.statTrak && <span style={{ color: '#e4ae39' }}>StatTrak™ </span>}
+  {RARITIES.find(x => x.value === item.rarity)?.label || item.rarity}
+</p>
+<p style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--color-text-tertiary)' }}>
+  {CONDITIONS.find(c => c.value === item.condition)?.label || ''}
+</p>
               <p style={{ margin: '0 0 10px', fontSize: 15, fontWeight: 500 }}>{item.price} ₽</p>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button
