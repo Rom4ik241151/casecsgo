@@ -16,6 +16,8 @@ const cases = [
 export default function Home() {
   const router = useRouter()
   const { balance, steamUser, setSteamUser } = useStore()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   const [activeFilter, setActiveFilter] = useState('Все')
   const online = useOnline()
   const [totalOpened, setTotalOpened] = useState(0)
@@ -27,8 +29,10 @@ useEffect(() => {
     .catch(() => {})
 }, [])
   useEffect(() => {
+  console.log('ALL COOKIES:', document.cookie)
   const cookies = document.cookie.split(';')
   const steamCookie = cookies.find(c => c.trim().startsWith('steam_user='))
+  console.log('STEAM COOKIE:', steamCookie)
   if (steamCookie) {
     try {
       const user = JSON.parse(decodeURIComponent(steamCookie.split('=')[1]))
@@ -140,7 +144,7 @@ useEffect(() => {
 
       {/* Навигация */}
       <nav style={{
-        background: 'rgba(22, 33, 62, 0.95)',
+        background: 'rgba(8, 8, 20, 0.98)',
         backdropFilter: 'blur(10px)',
         borderBottom: '1px solid rgba(233,69,96,0.3)',
         padding: '0 30px',
@@ -167,20 +171,22 @@ useEffect(() => {
         </div>
         
         <div style={{ display: 'flex', gap: '40px' }}>
-          {['Кейсы', 'Апгрейд', 'Рулетка', 'Контракты'].map(item => (
+          {[['/', 'Кейсы'], ['/upgrade', 'Апгрейд'], ['/roulette', 'Рулетка'], ['/contracts', 'Контракты']].map(([href, label]) => (
             <span 
-              key={item} 
+              key={href} 
+              onClick={() => router.push(href)}
               className="nav-item"
               style={{ 
-                color: '#aaa', 
+                color: href === '/' ? '#fff' : '#aaa', 
                 cursor: 'pointer', 
                 fontSize: '15px', 
                 fontWeight: '500',
-                padding: '6px 0'
+                padding: '6px 0',
+                borderBottom: '2px solid transparent',
               }}
               onMouseEnter={e => e.currentTarget.style.color = '#e94560'}
-              onMouseLeave={e => e.currentTarget.style.color = '#aaa'}
-            >{item}</span>
+              onMouseLeave={e => e.currentTarget.style.color = href === '/' ? '#fff' : '#aaa'}
+            >{label}</span>
           ))}
         </div>
         
@@ -206,7 +212,7 @@ useEffect(() => {
             </span>
           </div>
         
-{steamUser ? (
+{mounted && steamUser ? (
   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
     <img src={(steamUser as any).avatar} width={36} height={36} style={{ borderRadius: '50%', border: '2px solid #e94560' }} />
     <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}>{(steamUser as any).name}</span>
@@ -219,7 +225,7 @@ useEffect(() => {
       cursor: 'pointer', fontSize: '12px'
     }}>Выйти</button>
   </div>
-) : (
+) : mounted ? (
   <button
     onClick={() => router.push('/api/auth/steam')}
     style={{
@@ -239,7 +245,7 @@ useEffect(() => {
     <img src="https://store.steampowered.com/favicon.ico" width={16} height={16} />
     Войти через Steam
   </button>
-)}
+) : null}
 <button 
   onClick={() => router.push('/profile')}
   style={{

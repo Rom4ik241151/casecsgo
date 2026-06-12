@@ -1,4 +1,6 @@
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 import { NextResponse } from 'next/server'
 import { prisma } from '../../../lib/prisma'
 
@@ -18,5 +20,9 @@ export async function GET() {
     username: d.user?.username || 'Игрок',
     avatar: d.user?.avatar || null,
     steamId: d.user?.steamId || null,
-  })))
-}   
+  })), {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+    }
+  })
+}

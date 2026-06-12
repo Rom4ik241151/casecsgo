@@ -71,7 +71,7 @@ export default function DropsPanel() {
           boxShadow: '0 0 8px #e94560',
           animation: 'pulse 2s infinite', flexShrink: 0,
         }} />
-        <span style={{ color: '#fff', fontSize: '11px', fontWeight: '800', letterSpacing: '1.5px' }}>
+        <span style={{ color: '#fff', fontSize: '11px', fontWeight: '800', letterSpacing: '1.5px', whiteSpace: 'nowrap' }}>
           ОНЛАЙН ДРОПЫ
         </span>
         <span style={{
