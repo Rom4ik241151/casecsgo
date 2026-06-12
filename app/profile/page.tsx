@@ -1,172 +1,144 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useStore } from '../store'
 
-export default function ProfilePage() {
+const PRESETS = [100, 250, 500, 1000, 2500, 5000]
+const SBP_PHONE = '89885087355'
+const SBP_BANK = 'Сбербанк'
+
+export default function PaymentPage() {
   const router = useRouter()
-  const { balance, inventory, drops, sellItem, removeFromInventory, level, experience, casesOpened, totalEarned, totalSpent, dailyStreak, addBalance } = useStore()
+  const [amount, setAmount] = useState('')
+  const [step, setStep] = useState<'form' | 'pending'>('form')
+  const [copied, setCopied] = useState(false)
 
-  function sell(item: any) {
-    sellItem(item)
-    removeFromInventory(item.uid)
+  function handlePay() {
+    if (!amount || Number(amount) < 50) return
+    setStep('pending')
   }
 
-  function sellAll() {
-    inventory.forEach((item: any) => sellItem(item))
-inventory.forEach((item: any) => removeFromInventory(item.uid))
+  function copyPhone() {
+    navigator.clipboard.writeText(SBP_PHONE)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
-  const inventoryValue = inventory.reduce((sum: number, i: any) => sum + i.price, 0)
+  if (step === 'pending') return (
+    <main style={{ minHeight: '100vh', background: '#0f1021', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+      <div style={{ background: '#16213e', borderRadius: '20px', padding: '40px', border: '1px solid #1e2a4a', maxWidth: '440px', width: '90%', textAlign: 'center' }}>
+        <div style={{ fontSize: '56px', marginBottom: '16px' }}>📱</div>
+        <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '8px' }}>Переведите {Number(amount).toLocaleString()} ₽</h2>
+        <p style={{ color: '#888', marginBottom: '24px', fontSize: '14px' }}>через СБП на номер</p>
+
+        <div style={{ background: '#0f1021', borderRadius: '12px', padding: '20px', marginBottom: '20px', border: '1px solid #1e2a4a' }}>
+          <p style={{ color: '#555', fontSize: '12px', marginBottom: '6px' }}>Номер телефона ({SBP_BANK})</p>
+          <p style={{ fontSize: '28px', fontWeight: 'bold', letterSpacing: '2px', marginBottom: '12px', color: 'white' }}>{SBP_PHONE}</p>
+          <button onClick={copyPhone} style={{
+            background: copied ? '#4caf50' : 'rgba(233,69,96,0.15)',
+            color: copied ? 'white' : '#e84b6a',
+            border: `1px solid ${copied ? '#4caf50' : 'rgba(233,69,96,0.3)'}`,
+            padding: '8px 24px', borderRadius: '8px', cursor: 'pointer',
+            fontWeight: 'bold', fontSize: '14px', transition: 'all 0.2s'
+          }}>
+            {copied ? '✓ Скопировано' : 'Скопировать номер'}
+          </button>
+        </div>
+
+        <div style={{ background: 'rgba(245,166,35,0.1)', border: '1px solid rgba(245,166,35,0.3)', borderRadius: '10px', padding: '14px', marginBottom: '24px', textAlign: 'left' }}>
+          <p style={{ color: '#f5a623', fontWeight: 'bold', fontSize: '13px', marginBottom: '6px' }}>⚠️ Инструкция</p>
+          <p style={{ color: '#aaa', fontSize: '12px', lineHeight: '1.6' }}>
+            1. Откройте приложение Сбербанк<br/>
+            2. Переведите <b style={{ color: 'white' }}>{Number(amount).toLocaleString()} ₽</b> на номер выше<br/>
+            3. В комментарии укажите свой никнейм<br/>
+            4. После перевода нажмите кнопку ниже
+          </p>
+        </div>
+
+        <button onClick={() => router.push('/profile')} style={{
+          width: '100%', background: '#e84b6a', color: 'white', border: 'none',
+          padding: '14px', borderRadius: '12px', cursor: 'pointer',
+          fontWeight: 'bold', fontSize: '16px', marginBottom: '12px'
+        }}>
+          Я оплатил — вернуться в профиль
+        </button>
+        <button onClick={() => setStep('form')} style={{
+          width: '100%', background: 'none', color: '#555', border: '1px solid #1e2a4a',
+          padding: '12px', borderRadius: '12px', cursor: 'pointer', fontSize: '14px'
+        }}>
+          ← Назад
+        </button>
+      </div>
+    </main>
+  )
 
   return (
-    <main style={{ minHeight: '100vh', background: '#0f1021', color: 'white', fontFamily: 'sans-serif' }}>
-
-      {/* Navbar */}
-      <nav style={{ background: '#0a0a1a', borderBottom: '1px solid #1e2a4a', padding: '0 24px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span onClick={() => router.push('/')} style={{ color: '#e84b6a', fontWeight: 'bold', fontSize: '20px', cursor: 'pointer' }}>CaseCSGO</span>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {([['/', '🎁 Кейсы'], ['/upgrade', '⚡ Апгрейд'], ['/roulette', '🎰 Рулетка'], ['/contracts', '📋 Контракты']] as [string, string][]).map(([href, label]) => (
-            <span key={href} onClick={() => router.push(href)} style={{
-              padding: '6px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer',
-              background: 'transparent', color: '#888', border: '1px solid #1e2a4a'
-            }}>{label}</span>
-          ))}
-        </div>
-        <span style={{ color: '#e84b6a', fontWeight: 'bold' }}>{balance} руб</span>
+    <main style={{ minHeight: '100vh', background: '#0f1021', color: 'white' }}>
+      <nav style={{ background: '#16213e', borderBottom: '1px solid #1e2a4a', padding: '0 24px', height: '56px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <span onClick={() => router.push('/')} style={{ color: '#e84b6a', fontWeight: 'bold', fontSize: '18px', cursor: 'pointer' }}>CaseCSGO</span>
+        <span style={{ color: '#555' }}>→</span>
+        <span style={{ color: '#888', fontSize: '14px' }}>Пополнение баланса</span>
       </nav>
 
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 20px' }}>
+      <div style={{ maxWidth: '500px', margin: '40px auto', padding: '0 20px' }}>
+        <div style={{ background: '#16213e', borderRadius: '20px', padding: '32px', border: '1px solid #1e2a4a' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px' }}>💳 Пополнить баланс</h1>
 
-        {/* Шапка профиля */}
-        <div style={{ background: '#16213e', borderRadius: '16px', padding: '28px', marginBottom: '24px', border: '1px solid #1e2a4a', display: 'flex', alignItems: 'center', gap: '24px' }}>
-          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #e84b6a, #8847ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', flexShrink: 0 }}>
-            👤
+          <p style={{ color: '#888', fontSize: '13px', marginBottom: '10px' }}>Выберите сумму:</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
+            {PRESETS.map(p => (
+              <button key={p} onClick={() => setAmount(String(p))} style={{
+                background: amount === String(p) ? '#e84b6a' : 'rgba(255,255,255,0.05)',
+                color: amount === String(p) ? 'white' : '#aaa',
+                border: amount === String(p) ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                padding: '12px', borderRadius: '10px', cursor: 'pointer',
+                fontWeight: 'bold', fontSize: '15px', transition: 'all 0.2s'
+              }}>{p.toLocaleString()} ₽</button>
+            ))}
           </div>
-          <div style={{ flex: 1 }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>Игрок</h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-              <span style={{ background: '#e84b6a', color: 'white', padding: '2px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>Уровень {level}</span>
-              {dailyStreak > 0 && <span style={{ background: '#f5a623', color: '#000', padding: '2px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>🔥 Стрик {dailyStreak} дней</span>}
-            </div>
-            {/* Прогресс бар опыта */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ flex: 1, height: '6px', background: '#0f1021', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{ width: `${(experience / (level * 10)) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #e84b6a, #8847ff)', borderRadius: '3px', transition: 'width 0.3s' }} />
-              </div>
-              <span style={{ color: '#888', fontSize: '12px', whiteSpace: 'nowrap' }}>{experience} / {level * 10} XP</span>
-            </div>
-          </div>
-        </div>
-        {/* Пополнение баланса */}
-<div style={{ background: '#16213e', borderRadius: '16px', padding: '24px', marginBottom: '24px', border: '1px solid #1e2a4a' }}>
-  <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>💳 Пополнить баланс</h2>
-  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
-    {[100, 250, 500, 1000, 2500, 5000].map(amount => (
-      <button key={amount} onClick={() => addBalance(amount)} style={{
-        background: 'rgba(233,69,96,0.1)',
-        border: '1px solid rgba(233,69,96,0.3)',
-        color: '#e84b6a', padding: '10px 20px',
-        borderRadius: '8px', cursor: 'pointer',
-        fontWeight: 'bold', fontSize: '14px',
-        transition: 'all 0.2s'
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.background = '#e84b6a'
-        e.currentTarget.style.color = 'white'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background = 'rgba(233,69,96,0.1)'
-        e.currentTarget.style.color = '#e84b6a'
-      }}
-      >+{amount} ₽</button>
-    ))}
-  </div>
-  <p style={{ color: '#555', fontSize: '12px', marginBottom: '16px' }}>* Тестовый режим — баланс пополняется мгновенно</p>
-<button onClick={() => router.push('/payment')} style={{
-  background: '#e84b6a', color: 'white', border: 'none',
-  padding: '10px 24px', borderRadius: '8px', cursor: 'pointer',
-  fontWeight: 'bold', fontSize: '14px'
-}}>
-  💳 Пополнить через платёжку
-</button>
-</div>
 
-        {/* Статистика */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-          {[
-            { label: 'Баланс', value: `${balance} руб`, color: '#e84b6a' },
-            { label: 'Кейсов открыто', value: casesOpened, color: '#4b9de8' },
-            { label: 'Заработано', value: `${totalEarned} руб`, color: '#4caf50' },
-            { label: 'Потрачено', value: `${totalSpent} руб`, color: '#f5a623' },
-            { label: 'Скинов в инвентаре', value: inventory.length, color: '#8847ff' },
-            { label: 'Стоимость инвентаря', value: `${inventoryValue} руб`, color: '#e4ae39' },
-          ].map(stat => (
-            <div key={stat.label} style={{ background: '#16213e', borderRadius: '12px', padding: '16px', border: '1px solid #1e2a4a' }}>
-              <p style={{ color: '#555', fontSize: '12px', marginBottom: '6px' }}>{stat.label}</p>
-              <p style={{ color: stat.color, fontWeight: 'bold', fontSize: '18px' }}>{stat.value}</p>
-            </div>
-          ))}
-        </div>
+          <p style={{ color: '#888', fontSize: '13px', marginBottom: '8px' }}>Или введите сумму:</p>
+          <input
+            type="number"
+            placeholder="Минимум 50 ₽"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            style={{
+              width: '100%', background: '#0f1021', border: '1px solid #1e2a4a',
+              color: 'white', padding: '12px 16px', borderRadius: '10px',
+              fontSize: '16px', marginBottom: '24px', boxSizing: 'border-box'
+            }}
+          />
 
-        {/* Инвентарь */}
-        <div style={{ background: '#16213e', borderRadius: '16px', padding: '24px', border: '1px solid #1e2a4a', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>🎒 Инвентарь ({inventory.length})</h2>
-            {inventory.length > 0 && (
-              <button onClick={sellAll} style={{ background: '#e84b6a', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
-                Продать всё ({inventoryValue} руб)
-              </button>
-            )}
-          </div>
-          {inventory.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#444' }}>
-              <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎒</div>
-              <p>Инвентарь пуст — открывай кейсы!</p>
+          <div style={{ background: 'rgba(75,105,255,0.1)', border: '1px solid rgba(75,105,255,0.3)', borderRadius: '12px', padding: '16px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <span style={{ fontSize: '28px' }}>📱</span>
+            <div>
+              <p style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '2px' }}>СБП — Сбербанк</p>
+              <p style={{ color: '#888', fontSize: '12px' }}>Перевод через СБП на номер {SBP_PHONE}</p>
             </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px' }}>
-              {inventory.map((item: any) => (
-                <div key={item.uid} style={{ background: '#0f1021', borderRadius: '10px', padding: '14px', textAlign: 'center', borderBottom: `3px solid ${item.color}` }}>
-                  <div style={{ fontSize: '36px', marginBottom: '8px' }}>🔫</div>
-                  <p style={{ color: item.color, fontSize: '11px', fontWeight: 'bold', marginBottom: '2px' }}>{item.name}</p>
-                  <p style={{ color: '#555', fontSize: '11px', marginBottom: '4px' }}>{item.caseName}</p>
-                  <p style={{ color: '#e84b6a', fontWeight: 'bold', fontSize: '13px', marginBottom: '10px' }}>{item.price} руб</p>
-                  <button onClick={() => sell(item)} style={{ background: '#e84b6a', color: 'white', border: 'none', padding: '6px 0', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', width: '100%', fontSize: '12px' }}>
-                    Продать
-                  </button>
-                </div>
-              ))}
+          </div>
+
+          {Number(amount) >= 1000 && (
+            <div style={{ background: 'rgba(76,175,80,0.1)', border: '1px solid rgba(76,175,80,0.3)', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '20px' }}>🎁</span>
+              <p style={{ color: '#4caf50', fontSize: '13px', fontWeight: 'bold' }}>+{Math.round(Number(amount) * 0.05).toLocaleString()} ₽ бонус за пополнение от 1000 ₽!</p>
             </div>
           )}
-        </div>
 
-        {/* История дропов */}
-        <div style={{ background: '#16213e', borderRadius: '16px', padding: '24px', border: '1px solid #1e2a4a' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px' }}>📜 История дропов ({drops.length})</h2>
-          {drops.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#444' }}>
-              <div style={{ fontSize: '48px', marginBottom: '12px' }}>📜</div>
-              <p>История пуста — открывай кейсы!</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {drops.map((drop: any, i: number) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f1021', borderRadius: '8px', padding: '12px 16px', borderLeft: `3px solid ${drop.color}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ fontSize: '24px' }}>🔫</span>
-                    <div>
-                      <p style={{ color: drop.color, fontWeight: 'bold', fontSize: '13px' }}>{drop.name}</p>
-                      <p style={{ color: '#555', fontSize: '11px' }}>{drop.caseName} • {drop.time}</p>
-                    </div>
-                  </div>
-                  <span style={{ color: '#e84b6a', fontWeight: 'bold' }}>{drop.price} руб</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <button
+            onClick={handlePay}
+            disabled={!amount || Number(amount) < 50}
+            style={{
+              width: '100%',
+              background: !amount || Number(amount) < 50 ? '#333' : 'linear-gradient(135deg, #e84b6a, #8847ff)',
+              color: 'white', border: 'none', padding: '16px',
+              borderRadius: '12px', cursor: !amount || Number(amount) < 50 ? 'not-allowed' : 'pointer',
+              fontWeight: 'bold', fontSize: '18px', transition: 'all 0.2s'
+            }}
+          >
+            Перейти к оплате {amount ? `${Number(amount).toLocaleString()} ₽` : ''}
+          </button>
         </div>
-
       </div>
     </main>
   )
