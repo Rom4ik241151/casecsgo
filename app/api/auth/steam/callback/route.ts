@@ -27,7 +27,7 @@ async function handleCallback(req: NextRequest) {
       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/?error=steam_failed`)
     }
 
-    const response = NextResponse.redirect(process.env.NEXT_PUBLIC_APP_URL!)
+    const response = NextResponse.redirect(process.env.NEXT_PUBLIC_APP_URL!, 308)
     response.cookies.set('steam_user', JSON.stringify({
       steamId: player.steamid,
       name: player.personaname,
