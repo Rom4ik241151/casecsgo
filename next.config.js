@@ -1,7 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['steamcommunity-a.akamaihd.net', 'cdn.steamcommunity.com'],
+    domains: [
+      'steamcommunity-a.akamaihd.net',
+      'cdn.steamcommunity.com',
+      'community.cloudflare.steamstatic.com',
+    ],
   },
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',

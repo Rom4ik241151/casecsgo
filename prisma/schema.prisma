@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -14,7 +15,7 @@ model User {
   avatar      String?
   balance     Int      @default(1000)
   totalWon    Int      @default(0)
-    createdAt   DateTime @default(now())
+  createdAt   DateTime @default(now())
   lastSeen    DateTime @default(now())
   inventory   InventoryItem[]
   drops       Drop[]
@@ -42,7 +43,44 @@ model Drop {
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
 }
+
 model Visitor {
   id        String   @id
   lastSeen  DateTime @default(now())
+}
+
+model Item {
+  id         String   @id @default(cuid())
+  name       String
+  image      String
+  price      Float
+  rarity     String?  @default("Common")
+  color      String?  @default("#888888")
+  steamUrl   String?  @unique
+  marketHash String?  @unique
+  createdAt  DateTime @default(now())
+  caseItems  CaseItem[]
+}
+
+model Case {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Int
+  image       String?
+  items       CaseItem[]
+  createdAt   DateTime @default(now())
+}
+
+model CaseItem {
+  id        String   @id @default(cuid())
+  caseId    String
+  itemId    String
+  
+  // Связи
+  item      Item     @relation(fields: [itemId], references: [id])
+  case      Case     @relation(fields: [caseId], references: [id])
+  
+  dropRate  Float    @default(1.0)
+  createdAt DateTime @default(now())
 }
