@@ -391,7 +391,7 @@ wonItems.forEach(item => {
         zIndex: 100
       }}>
         <div
-          onClick={() => router.push('/')}
+          onClick={() => router.push(`/case/${drop.caseName}`)}
           style={{ cursor: 'pointer', fontSize: '44px', fontWeight: '800', letterSpacing: '-1px', padding: '8px 0' }}
           className="logo-glow"
         >

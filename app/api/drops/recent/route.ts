@@ -5,7 +5,7 @@ import { prisma } from '../../../lib/prisma'
 export async function GET() {
   const drops = await prisma.drop.findMany({
     orderBy: { createdAt: 'desc' },
-    take: 30,
+    take: 15,
     include: { user: { select: { username: true, avatar: true, steamId: true } } }
   })
 
@@ -19,4 +19,4 @@ export async function GET() {
     avatar: d.user?.avatar || null,
     steamId: d.user?.steamId || null,
   })))
-}
+}   
