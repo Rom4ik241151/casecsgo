@@ -38,20 +38,35 @@ export default function AdminPage() {
     setSuccess('')
 
     try {
-      const res = await fetch('/api/items', {
+      const parseRes = await fetch('/api/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ mode: 'parse', url }),
       })
-      const data = await res.json()
+      const parsed = await parseRes.json()
+      if (!parseRes.ok) { setError(parsed.error || 'Ошибка парсинга'); return }
 
-      if (!res.ok) {
-        setError(data.error || 'Ошибка')
-      } else {
-        setSuccess(`Добавлен: ${data.name}`)
-        setUrl('')
-        fetchItems()
-      }
+      const saveRes = await fetch('/api/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'save',
+          url: parsed.steamUrl,
+          name: parsed.name,
+          image: parsed.image,
+          price: parsed.price,
+          marketHash: parsed.marketHash,
+          rarity: parsed.rarity,
+          statTrak: false,
+          condition: 'FT',
+        }),
+      })
+      const saved = await saveRes.json()
+      if (!saveRes.ok) { setError(saved.error || 'Ошибка сохранения'); return }
+
+      setSuccess(`Добавлен: ${saved.name} — ${saved.price} ₽`)
+      setUrl('')
+      fetchItems()
     } catch {
       setError('Ошибка сети')
     } finally {
