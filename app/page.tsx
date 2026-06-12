@@ -140,119 +140,85 @@ useEffect(() => {
 
       {/* Навигация */}
       <nav style={{
-        background: 'rgba(22, 33, 62, 0.95)',
-        backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(233,69,96,0.3)',
-        padding: '0 30px',
-        height: '80px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100
-      }}>
-        <div 
-          onClick={() => router.push('/')} 
-          style={{ 
-            cursor: 'pointer',
-            fontSize: '44px',
-            fontWeight: '800',
-            letterSpacing: '-1px',
-            padding: '8px 0'
-          }}
-          className="logo-glow"
-        >
-          OtakuCase
-        </div>
-        
-        <div style={{ display: 'flex', gap: '40px' }}>
-          {['Кейсы', 'Апгрейд', 'Рулетка', 'Контракты'].map(item => (
-            <span 
-              key={item} 
-              className="nav-item"
-              style={{ 
-                color: '#aaa', 
-                cursor: 'pointer', 
-                fontSize: '15px', 
-                fontWeight: '500',
-                padding: '6px 0'
-              }}
-              onMouseEnter={e => e.currentTarget.style.color = '#e94560'}
-              onMouseLeave={e => e.currentTarget.style.color = '#aaa'}
-            >{item}</span>
-          ))}
-        </div>
-        
-        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-          <div className="balance-card" style={{
-            background: 'rgba(233,69,96,0.12)',
-            padding: '10px 24px',
-            borderRadius: '50px',
-            border: '1px solid rgba(233,69,96,0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            transition: 'all 0.3s ease'
-          }}>
-            <span style={{ fontSize: '20px' }}>💰</span>
-            <span style={{ 
-              color: '#e94560', 
-              fontWeight: 'bold', 
-              fontSize: '20px',
-              fontFamily: 'monospace'
-            }}>
-              {balance.toLocaleString()} ₽
-            </span>
-          </div>
-        
-{steamUser ? (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-    <img src={(steamUser as any).avatar} width={36} height={36} style={{ borderRadius: '50%', border: '2px solid #e94560' }} />
-    <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}>{(steamUser as any).name}</span>
-    <button onClick={() => {
-      document.cookie = 'steam_user=; max-age=0; path=/'
-      setSteamUser(null)
-    }} style={{
-      background: 'transparent', border: '1px solid #444',
-      color: '#888', padding: '6px 12px', borderRadius: '20px',
-      cursor: 'pointer', fontSize: '12px'
-    }}>Выйти</button>
+  background: 'rgba(8, 8, 20, 0.98)',
+  backdropFilter: 'blur(20px)',
+  borderBottom: '1px solid rgba(233,69,96,0.2)',
+  padding: '0 30px',
+  height: '70px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  position: 'sticky',
+  top: 0,
+  zIndex: 100,
+  boxShadow: '0 4px 30px rgba(0,0,0,0.5)'
+}}>
+  <div onClick={() => router.push('/')} style={{ cursor: 'pointer', fontSize: '36px', fontWeight: '800', letterSpacing: '-1px' }} className="logo-glow">
+    OtakuCase
   </div>
-) : (
-  <button
-    onClick={() => router.push('/api/auth/steam')}
-    style={{
-      background: 'linear-gradient(135deg, #1b2838, #2a475e)',
-      color: 'white',
-      border: '1px solid #4c6b22',
-      padding: '10px 20px',
-      borderRadius: '50px',
-      cursor: 'pointer',
-      fontWeight: 'bold',
-      fontSize: '14px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }}
-  >
-    <img src="https://store.steampowered.com/favicon.ico" width={16} height={16} />
-    Войти через Steam
-  </button>
-)}
-<button 
-  onClick={() => router.push('/profile')}
-  style={{
-    background: 'linear-gradient(135deg, #e94560, #c73550)',
-    color: 'white', border: 'none', padding: '10px 24px',
-    borderRadius: '50px', cursor: 'pointer', fontWeight: 'bold',
-    fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px',
-    boxShadow: '0 2px 15px rgba(233,69,96,0.4)'
-  }}
->
-  👤 Профиль
-</button>
-</div>
+
+  <div style={{ display: 'flex', gap: '8px' }}>
+    {[['/', 'Кейсы'], ['/upgrade', 'Апгрейд'], ['/roulette', 'Рулетка'], ['/contracts', 'Контракты']].map(([href, label]) => (
+      <span key={href} onClick={() => router.push(href)} className="nav-item" style={{
+        color: '#888', cursor: 'pointer', fontSize: '14px', fontWeight: '600',
+        padding: '8px 16px', borderRadius: '8px', transition: 'all 0.2s ease'
+      }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(233,69,96,0.1)' }}
+        onMouseLeave={e => { e.currentTarget.style.color = '#888'; e.currentTarget.style.background = 'transparent' }}
+      >{label}</span>
+    ))}
+  </div>
+
+  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+    {/* Баланс */}
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(233,69,96,0.15), rgba(233,69,96,0.05))',
+      padding: '8px 20px', borderRadius: '12px',
+      border: '1px solid rgba(233,69,96,0.3)',
+      display: 'flex', alignItems: 'center', gap: '8px'
+    }}>
+      <span style={{ fontSize: '16px' }}>💰</span>
+      <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: 'monospace' }}>
+        {balance.toLocaleString()} ₽
+      </span>
+    </div>
+
+    {steamUser ? (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px',
+        background: 'rgba(255,255,255,0.05)', padding: '6px 14px 6px 6px',
+        borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)'
+      }}>
+        <img src={(steamUser as any).avatar} width={32} height={32} style={{ borderRadius: '8px', border: '2px solid #e94560' }} />
+        <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '13px' }}>{(steamUser as any).name}</span>
+        <button onClick={() => { document.cookie = 'steam_user=; max-age=0; path=/'; setSteamUser(null) }} style={{
+          background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+          color: '#666', padding: '4px 10px', borderRadius: '6px',
+          cursor: 'pointer', fontSize: '11px'
+        }}>Выйти</button>
+      </div>
+    ) : (
+      <button onClick={() => router.push('/api/auth/steam')} style={{
+        background: 'linear-gradient(135deg, #1b2838, #2a475e)',
+        color: 'white', border: '1px solid #4c6b22',
+        padding: '8px 18px', borderRadius: '12px',
+        cursor: 'pointer', fontWeight: 'bold', fontSize: '13px',
+        display: 'flex', alignItems: 'center', gap: '8px'
+      }}>
+        <img src="https://store.steampowered.com/favicon.ico" width={14} height={14} />
+        Войти через Steam
+      </button>
+    )}
+
+    <button onClick={() => router.push('/profile')} style={{
+      background: 'linear-gradient(135deg, #e94560, #c73550)',
+      color: 'white', border: 'none', padding: '8px 20px',
+      borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold',
+      fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px',
+      boxShadow: '0 2px 15px rgba(233,69,96,0.3)'
+    }}>
+      👤 Профиль
+    </button>
+  </div>
 </nav>
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
