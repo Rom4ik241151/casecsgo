@@ -33,26 +33,28 @@ export default function DropsPanel() {
 
   return (
     <div style={{
-      width: '210px', flexShrink: 0,
-      background: '#08080f',
-      borderRight: '1px solid rgba(233,69,96,0.08)',
+      width: '260px', flexShrink: 0,
+      background: `linear-gradient(rgba(5,5,20,0.82), rgba(5,5,20,0.82)), url(/bg2.png) top/cover no-repeat`,
+      borderRight: '1px solid rgba(233,69,96,0.15)',
       overflowY: 'auto', overflowX: 'hidden',
       height: 'calc(100vh - 80px)',
       position: 'sticky', top: 80,
       scrollbarWidth: 'none',
     }}>
       <style>{`
+        @keyframes shimmerText {
+          0% { background-position: 0% center; }
+          100% { background-position: 200% center; }
+        }
         @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
         @keyframes slideDown {
           from { opacity: 0; transform: translateY(-12px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes casePopIn {
-          from { opacity: 0; transform: scale(0.9); }
+        @keyframes popIn {
+          from { opacity: 0; transform: scale(0.88); }
           to { opacity: 1; transform: scale(1); }
         }
-        .drop-row:hover { background: rgba(255,255,255,0.02) !important; }
-        .avatar-btn:hover { transform: scale(1.1); }
       `}</style>
 
       {/* Шапка */}
@@ -93,14 +95,14 @@ export default function DropsPanel() {
         return (
           <div
             key={drop.id}
-            className="drop-row"
             onMouseEnter={() => setHoveredId(drop.id)}
             onMouseLeave={() => setHoveredId(null)}
             style={{
               position: 'relative', overflow: 'hidden',
-              padding: '10px 12px',
-              borderBottom: '1px solid rgba(255,255,255,0.03)',
+              height: '120px',
+              borderBottom: '1px solid rgba(255,255,255,0.04)',
               animation: i === 0 ? 'slideDown 0.4s ease' : 'none',
+              background: isHovered ? `${drop.color}08` : 'transparent',
               transition: 'background 0.2s',
             }}
           >
@@ -108,96 +110,146 @@ export default function DropsPanel() {
             <div style={{
               position: 'absolute', left: 0, top: 0, bottom: 0, width: '2px',
               background: drop.color,
-              opacity: i === 0 || isHovered ? 1 : 0.3,
+              opacity: i === 0 || isHovered ? 1 : 0.25,
               boxShadow: isHovered ? `0 0 10px ${drop.color}` : 'none',
-              transition: 'all 0.3s',
+              transition: 'all 0.3s', zIndex: 2,
             }} />
 
-            {/* Размытый фон при ховере */}
+            {/* Размытый фон */}
             <div style={{
               position: 'absolute', inset: 0,
               backgroundImage: caseImg ? `url(${caseImg})` : 'none',
               backgroundSize: 'cover', backgroundPosition: 'center',
-              opacity: isHovered ? 0.07 : 0,
+              opacity: isHovered ? 0.08 : 0,
               filter: 'blur(8px)', transform: 'scale(1.2)',
               transition: 'opacity 0.4s ease', zIndex: 0,
             }} />
 
-            {/* Оверлей с кейсом */}
-            {caseImg && isHovered && (
-              <div
-                onClick={() => { const id = CASE_IDS[drop.caseName]; if (id) router.push(`/case/${id}`) }}
-                style={{
-                  position: 'absolute', inset: 0, zIndex: 5,
-                  display: 'flex', alignItems: 'center',
-                  gap: '10px', padding: '0 14px',
-                  background: `linear-gradient(120deg, rgba(8,8,15,0.95) 0%, ${drop.color}18 100%)`,
-                  backdropFilter: 'blur(4px)',
-                  cursor: 'pointer',
-                  animation: 'casePopIn 0.2s ease',
-                  borderLeft: `2px solid ${drop.color}`,
-                }}
-              >
-                <img src={caseImg} alt="" style={{
-                  width: '56px', height: '56px', objectFit: 'contain', flexShrink: 0,
-                  filter: `drop-shadow(0 0 12px ${drop.color})`,
-                }} />
-                <div>
-                  <p style={{ fontSize: '10px', color: '#aaa', marginBottom: '4px' }}>{drop.caseName}</p>
+            {/* Обычный вид */}
+            {!isHovered && (
+              <div style={{
+                position: 'absolute', inset: 0, zIndex: 1,
+                display: 'flex', alignItems: 'center',
+                gap: '10px', padding: '0 12px 0 14px',
+              }}>
+                <div style={{
+                  width: '52px', height: '52px', borderRadius: '50%',
+                  overflow: 'hidden', flexShrink: 0,
+                  border: `1.5px solid ${drop.color}60`,
+                  boxShadow: `0 0 8px ${drop.color}30`,
+                  background: `${drop.color}20`,
+                }}>
+                  {drop.avatar
+                    ? <img src={drop.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>👤</div>
+                  }
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '16px' }}>
+                    <span style={{
+                      fontSize: '11px', color: '#666', fontWeight: '500', letterSpacing: '0.5px',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>👤 {drop.username || 'Игрок'}</span>
+                    {i === 0 && (
+                      <span style={{
+                        fontSize: '8px', color: '#4caf50', fontWeight: '900',
+                        background: 'rgba(76,175,80,0.12)', padding: '1px 4px',
+                        borderRadius: '3px', flexShrink: 0,
+                        border: '1px solid rgba(76,175,80,0.2)',
+                      }}>NEW</span>
+                    )}
+                  </div>
                   <p style={{
-                    fontSize: '11px', fontWeight: '800', color: drop.color,
+                    fontSize: '14px', fontWeight: '800', color: drop.color,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     textShadow: `0 0 10px ${drop.color}80`,
-                  }}>Открыть →</p>
+                    letterSpacing: '0.3px',
+                  }}>{drop.name}</p>
+                  <p style={{
+                    fontSize: '10px', color: '#444', fontWeight: '500', marginTop: '2px',
+                  }}>из {drop.caseName}</p>
                 </div>
               </div>
             )}
 
-            {/* Контент */}
-            <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '9px' }}>
-              {/* Аватарка */}
-              <div
-                className="avatar-btn"
-                onClick={() => drop.steamId && router.push(`/profile/${drop.steamId}`)}
-                style={{
-                  width: '34px', height: '34px', borderRadius: '50%',
-                  overflow: 'hidden', flexShrink: 0,
-                  border: `1.5px solid ${drop.color}80`,
-                  boxShadow: `0 0 8px ${drop.color}40`,
-                  cursor: drop.steamId ? 'pointer' : 'default',
-                  transition: 'transform 0.2s',
-                  background: `${drop.color}20`,
-                }}
-              >
-                {drop.avatar
-                  ? <img src={drop.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>👤</div>
-                }
-              </div>
-
-              {/* Текст */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '3px' }}>
-                  <span style={{
-                    fontSize: '11px', color: '#ddd', fontWeight: '600',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>{drop.username || 'Игрок'}</span>
-                  {i === 0 && (
-                    <span style={{
-                      fontSize: '8px', color: '#4caf50', fontWeight: '900',
-                      background: 'rgba(76,175,80,0.12)', padding: '1px 4px',
-                      borderRadius: '3px', flexShrink: 0, letterSpacing: '0.5px',
-                      border: '1px solid rgba(76,175,80,0.2)',
-                    }}>NEW</span>
-                  )}
+            {/* Ховер вид: кейс слева, аватар справа */}
+            {isHovered && (
+              <div style={{
+                position: 'absolute', inset: 0, zIndex: 3,
+                display: 'flex', alignItems: 'stretch',
+                animation: 'popIn 0.2s ease',
+              }}>
+                {/* Аватар — левая (меньше) */}
+                <div
+                  onClick={() => drop.steamId && router.push(`/profile/${drop.steamId}`)}
+                  style={{
+                    flex: '0 0 35%',
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', gap: '4px',
+                    background: 'rgba(8,8,20,0.9)',
+                    cursor: drop.steamId ? 'pointer' : 'default',
+                    padding: '6px',
+                    borderRight: `1px solid ${drop.color}30`,
+                  }}
+                >
+                  <div style={{
+                    width: '34px', height: '34px', borderRadius: '50%',
+                    overflow: 'hidden',
+                    border: `2px solid ${drop.color}`,
+                    boxShadow: `0 0 10px ${drop.color}60`,
+                  }}>
+                    {drop.avatar
+                      ? <img src={drop.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', background: `${drop.color}20` }}>👤</div>
+                    }
+                  </div>
+                  <span style={{ fontSize: '8px', color: '#aaa', fontWeight: '700' }}>Профиль</span>
                 </div>
-                <p style={{
-                  fontSize: '11px', fontWeight: '700', color: drop.color,
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  textShadow: isHovered ? `0 0 8px ${drop.color}` : 'none',
-                  transition: 'text-shadow 0.3s',
-                }}>{drop.name}</p>
+
+                {/* Кейс — правая (шире) */}
+<div
+  onClick={() => { const id = CASE_IDS[drop.caseName]; if (id) router.push(`/case/${id}`) }}
+  style={{
+    flex: 1,
+    display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center', gap: '4px',
+    background: `linear-gradient(135deg, rgba(8,8,20,0.95), ${drop.color}30)`,
+    cursor: 'pointer',
+    position: 'relative',
+    overflow: 'hidden',
+    padding: '0',
+  }}
+>
+  <style>{`
+    @keyframes floatCase {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-4px) scale(1.06); }
+    }
+  `}</style>
+
+  {caseImg && (
+    <img src={caseImg} alt="" style={{
+      width: '68px', height: '68px', objectFit: 'contain',
+      marginBottom: '-6px',
+      animation: 'floatCase 2s ease-in-out infinite',
+      position: 'relative', zIndex: 1,
+      filter: `drop-shadow(0 0 12px ${drop.color}) drop-shadow(0 0 24px ${drop.color}80)`,
+    }} />
+  )}
+
+  <span style={{
+    fontSize: '11px', fontWeight: '900', letterSpacing: '2px',
+    position: 'relative', zIndex: 1,
+    background: `linear-gradient(90deg, ${drop.color}, #fff, ${drop.color})`,
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundSize: '200% auto',
+    animation: 'shimmerText 2s linear infinite',
+  }}>✦ ОТКРЫТЬ ✦</span>
+</div>
+                
               </div>
-            </div>
+            )}
           </div>
         )
       })}
