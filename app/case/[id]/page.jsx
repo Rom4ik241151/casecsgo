@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useStore } from '../../store'
 
-function playSound(type) {
-  if (typeof window === 'undefined') return
+function playSound(type, muted) {
+  if (typeof window === 'undefined' || muted) return
   const audio = new Audio('/sounds/go-new-gambling.mp3')
   audio.volume = 0.4
   switch(type) {
@@ -303,6 +303,7 @@ export default function CasePage() {
   const [winners, setWinners] = useState([])
   const [done, setDone] = useState(false)
   const [activeCount, setActiveCount] = useState(1)
+  const [muted, setMuted] = useState(false)
 
   const SPIN_DURATION = fastMode ? 1500 : 6000
 
@@ -319,7 +320,7 @@ export default function CasePage() {
     setDone(false)
     setActiveCount(multiCount)
     setWinners(wonItems)
-    playSound('spin')
+    playSound('spin', muted)
     setTimeout(() => setSpinning(true), 50)
     setTimeout(() => {
       setSpinning(false)
@@ -343,8 +344,8 @@ wonItems.forEach(item => {
 })
       const hasJackpot = wonItems.some(i => i.rarity === 'Контрабанда')
       const hasRare = wonItems.some(i => i.rarity === 'Тайное' || i.rarity === 'Засекреченное')
-      if (hasJackpot) playSound('jackpot')
-      else if (hasRare) playSound('win')
+      if (hasJackpot) playSound('jackpot', muted)
+      else if (hasRare) playSound('win', muted)
     }, (fastMode ? 1500 : 6000) + 500)
   }
 
@@ -418,6 +419,12 @@ wonItems.forEach(item => {
               {balance.toLocaleString()} ₽
             </span>
           </div>
+          <button onClick={() => setMuted(m => !m)} style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: '#aaa', padding: '10px 16px',
+            borderRadius: '50px', cursor: 'pointer', fontSize: '18px'
+          }}>{muted ? '🔇' : '🔊'}</button>
           <button onClick={() => router.push('/profile')} style={{
             background: 'linear-gradient(135deg, #e94560, #c73550)',
             color: 'white', border: 'none', padding: '10px 24px',

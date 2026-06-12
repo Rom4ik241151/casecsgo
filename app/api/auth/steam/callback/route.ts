@@ -36,7 +36,8 @@ async function handleCallback(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7, 
       path: '/',
       httpOnly: false,
-      sameSite: 'lax'
+      sameSite: 'none',
+      secure: true,
     })
 
     return response
