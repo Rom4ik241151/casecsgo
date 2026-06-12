@@ -6,7 +6,7 @@ export async function GET() {
   const drops = await prisma.drop.findMany({
     orderBy: { createdAt: 'desc' },
     take: 30,
-    include: { user: { select: { username: true } } }
+    include: { user: { select: { username: true, avatar: true, steamId: true } } }
   })
 
   return NextResponse.json(drops.map(d => ({
@@ -15,6 +15,8 @@ export async function GET() {
     price: d.price,
     color: d.color,
     caseName: d.caseName,
-    username: d.user?.username || 'Игрок'
+    username: d.user?.username || 'Игрок',
+    avatar: d.user?.avatar || null,
+    steamId: d.user?.steamId || null,
   })))
 }

@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function DropsPanel() {
   const [drops, setDrops] = useState<any[]>([])
+  const router = useRouter()
 
   const fetchDrops = () => {
     fetch('/api/drops/recent')
@@ -29,7 +31,6 @@ export default function DropsPanel() {
       position: 'sticky',
       top: 80
     }}>
-      {/* Заголовок */}
       <div style={{
         padding: '12px 14px',
         borderBottom: '1px solid rgba(233,69,96,0.15)',
@@ -64,6 +65,10 @@ export default function DropsPanel() {
           from { opacity: 0; transform: translateX(-10px); }
           to { opacity: 1; transform: translateX(0); }
         }
+        .avatar-btn:hover {
+          transform: scale(1.15);
+          box-shadow: 0 0 10px var(--color);
+        }
       `}</style>
 
       {drops.length === 0 && (
@@ -81,13 +86,30 @@ export default function DropsPanel() {
           animation: i === 0 ? 'slideIn 0.4s ease' : 'none'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '5px' }}>
-            <div style={{
-              width: '24px', height: '24px', borderRadius: '50%',
-              background: `${drop.color}20`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '11px', border: `1px solid ${drop.color}40`,
-              flexShrink: 0
-            }}>🎰</div>
+            
+            {/* Аватарка */}
+            <div
+              className="avatar-btn"
+              onClick={() => drop.steamId && router.push(`/profile/${drop.steamId}`)}
+              title={drop.steamId ? `Профиль ${drop.username}` : ''}
+              style={{
+                width: '26px', height: '26px', borderRadius: '50%',
+                background: `${drop.color}20`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '11px', border: `1px solid ${drop.color}60`,
+                flexShrink: 0, overflow: 'hidden',
+                cursor: drop.steamId ? 'pointer' : 'default',
+                boxShadow: `0 0 6px ${drop.color}40`,
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                '--color': drop.color,
+              } as any}
+            >
+              {drop.avatar
+                ? <img src={drop.avatar} alt={drop.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : '🎰'
+              }
+            </div>
+
             <span style={{ fontSize: '11px', color: '#bbb', fontWeight: '500', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {drop.username || 'Игрок'}
             </span>
@@ -101,10 +123,10 @@ export default function DropsPanel() {
           </div>
           <p style={{
             fontSize: '11px', color: drop.color, fontWeight: 'bold',
-            marginBottom: '3px', paddingLeft: '31px',
+            marginBottom: '3px', paddingLeft: '33px',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
           }}>{drop.name}</p>
-          <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '31px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '33px' }}>
             <span style={{ fontSize: '11px', color: '#e94560', fontWeight: 'bold' }}>
               {drop.price.toLocaleString()} ₽
             </span>
