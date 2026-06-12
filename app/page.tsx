@@ -29,10 +29,20 @@ useEffect(() => {
     .catch(() => {})
 }, [])
   useEffect(() => {
-  console.log('ALL COOKIES:', document.cookie)
+  // Читаем из URL параметра
+  const urlParams = new URLSearchParams(window.location.search)
+  const su = urlParams.get('su')
+  if (su) {
+    try {
+      const user = JSON.parse(decodeURIComponent(su))
+      document.cookie = `steam_user=${encodeURIComponent(JSON.stringify(user))}; max-age=${60*60*24*7}; path=/`
+      setSteamUser(user)
+      window.history.replaceState({}, '', '/')
+    } catch {}
+  }
+
   const cookies = document.cookie.split(';')
   const steamCookie = cookies.find(c => c.trim().startsWith('steam_user='))
-  console.log('STEAM COOKIE:', steamCookie)
   if (steamCookie) {
     try {
       const user = JSON.parse(decodeURIComponent(steamCookie.split('=')[1]))

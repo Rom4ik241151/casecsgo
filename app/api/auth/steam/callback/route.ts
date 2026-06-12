@@ -27,20 +27,13 @@ async function handleCallback(req: NextRequest) {
       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/?error=steam_failed`)
     }
 
-    const response = NextResponse.redirect(process.env.NEXT_PUBLIC_APP_URL!, 308)
-    response.cookies.set('steam_user', JSON.stringify({
+    const userData = encodeURIComponent(JSON.stringify({
       steamId: player.steamid,
       name: player.personaname,
       avatar: player.avatarfull,
-    }), { 
-      maxAge: 60 * 60 * 24 * 7, 
-      path: '/',
-      httpOnly: false,
-      sameSite: 'none',
-      secure: true,
-    })
+    }))
 
-    return response
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/?su=${userData}`)
   } catch {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/?error=fetch_failed`)
   }
