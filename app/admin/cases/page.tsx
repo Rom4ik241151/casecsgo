@@ -43,15 +43,7 @@ const RARITIES = [
 ]
 
 const rarityColor = (r?: string) => RARITIES.find(x => x.value === r)?.color ?? '#888'
-const WEAPON_TYPES = [
-  'Все', 'AK-47', 'M4A4', 'M4A1-S', 'AWP', 'Desert Eagle', 'USP-S', 'Glock-18',
-  'P250', 'Five-SeveN', 'Tec-9', 'CZ75-Auto', 'P2000', 'R8 Revolver',
-  'MP7', 'MP9', 'MAC-10', 'PP-Bizon', 'P90', 'UMP-45', 'MP5-SD',
-  'FAMAS', 'Galil AR', 'AUG', 'SG 553',
-  'G3SG1', 'SCAR-20', 'SSG 08',
-  'Nova', 'MAG-7', 'Sawed-Off', 'XM1014',
-  'M249', 'Negev', 'Нож',
-]
+
 export default function AdminCasesPage() {
   const [cases, setCases] = useState<Case[]>([])
   const [allItems, setAllItems] = useState<Item[]>([])
@@ -70,7 +62,6 @@ export default function AdminCasesPage() {
   const [itemSearch, setItemSearch] = useState('')
   const [itemSort, setItemSort] = useState<'name' | 'price_asc' | 'price_desc' | 'rarity'>('name')
 const [rarityFilter, setRarityFilter] = useState<string>('all')
-const [weaponFilter, setWeaponFilter] = useState('Все')
   const [saveLoading, setSaveLoading] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [saveSuccess, setSaveSuccess] = useState('')
@@ -181,7 +172,6 @@ const [weaponFilter, setWeaponFilter] = useState('Все')
   const filteredItems = allItems
   .filter(i => i.name.toLowerCase().includes(itemSearch.toLowerCase()))
   .filter(i => rarityFilter === 'all' || i.rarity === rarityFilter)
-  .filter(i => weaponFilter === 'Все' || i.name.includes(weaponFilter))
   .sort((a, b) => {
     if (itemSort === 'price_asc') return a.price - b.price
     if (itemSort === 'price_desc') return b.price - a.price
@@ -507,30 +497,17 @@ const [weaponFilter, setWeaponFilter] = useState('Все')
   ))}
 </div>
 
-{/* Сортировка + фильтр по оружию */}
-<div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0, maxHeight: 300, overflowY: 'auto', paddingRight: 4 }}>
-    {WEAPON_TYPES.map(w => (
-      <button key={w} onClick={() => setWeaponFilter(w)} style={{
-        padding: '3px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', textAlign: 'left',
-        border: weaponFilter === w ? '1px solid #4b69ff' : '0.5px solid var(--color-border-tertiary)',
-        background: weaponFilter === w ? 'rgba(75,105,255,0.15)' : 'none',
-        color: weaponFilter === w ? '#4b69ff' : 'var(--color-text-secondary)',
-        whiteSpace: 'nowrap',
-      }}>{w}</button>
-    ))}
-  </div>
-  <div style={{ flex: 1 }}>
-    <div style={{ display: 'flex', gap: 4, marginBottom: '0.75rem' }}>
-      {([['name', 'А-Я'], ['price_asc', 'Цена ↑'], ['price_desc', 'Цена ↓'], ['rarity', 'Редкость']] as const).map(([val, label]) => (
-        <button key={val} onClick={() => setItemSort(val)} style={{
-          fontSize: 11, padding: '3px 10px', borderRadius: 6, cursor: 'pointer', border: 'none',
-          background: itemSort === val ? 'var(--color-background-secondary)' : 'transparent',
-          color: itemSort === val ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-          borderBottom: itemSort === val ? '2px solid #4b69ff' : '2px solid transparent',
-        }}>{label}</button>
-      ))}
-    </div>
+{/* Сортировка */}
+<div style={{ display: 'flex', gap: 4, marginBottom: '0.75rem' }}>
+  {([['name', 'А-Я'], ['price_asc', 'Цена ↑'], ['price_desc', 'Цена ↓'], ['rarity', 'Редкость']] as const).map(([val, label]) => (
+    <button key={val} onClick={() => setItemSort(val)} style={{
+      fontSize: 11, padding: '3px 10px', borderRadius: 6, cursor: 'pointer', border: 'none',
+      background: itemSort === val ? 'var(--color-background-secondary)' : 'transparent',
+      color: itemSort === val ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+      borderBottom: itemSort === val ? '2px solid #4b69ff' : '2px solid transparent',
+    }}>{label}</button>
+  ))}
+</div>
 
             {allItems.length === 0 ? (
               <p style={{ fontSize: 13, color: 'var(--color-text-tertiary)', textAlign: 'center', padding: '1rem' }}>
@@ -606,10 +583,7 @@ const [weaponFilter, setWeaponFilter] = useState('Все')
                 })}
               </div>
             )}
-  </div>
-</div>
           </div>
-              
 
           {/* Кнопки */}
           {saveError && <p style={{ color: '#eb4b4b', fontSize: 13, margin: 0 }}>{saveError}</p>}
