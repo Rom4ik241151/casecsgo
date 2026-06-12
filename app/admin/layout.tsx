@@ -10,7 +10,7 @@ const NAV = [
   { href: '/admin/cases', label: '📦 Кейсы' },
 ]
 
-const ADMIN_PASSWORD = 'твой_пароль_здесь' // ← поменяй
+const ADMIN_PASSWORD = 'pisun22221' // ← поменяй
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
