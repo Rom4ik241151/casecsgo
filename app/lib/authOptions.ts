@@ -21,16 +21,14 @@ export const authOptions: AuthOptions = {
       token: 'https://steamcommunity.com/openid/login',
       userinfo: 'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/',
       profile(profile: any) {
-        return {
-          id: profile.steamid,
-          name: profile.personaname,
-          image: profile.avatarfull,
-        }
-      },
-      clientId: 'steam',
-      clientSecret: process.env.STEAM_API_KEY!,
-    }
-  ],
+  console.log('STEAM PROFILE:', JSON.stringify(profile))
+  const player = profile.response?.players?.[0] ?? profile
+  return {
+    id: player.steamid ?? profile.steamid,
+    name: player.personaname ?? profile.personaname ?? 'Игрок',
+    image: player.avatarfull ?? profile.avatarfull ?? null,
+  }
+},
   callbacks: {
     async signIn({ user }) {
       try {
