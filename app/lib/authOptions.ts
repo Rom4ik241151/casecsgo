@@ -67,7 +67,8 @@ export const authOptions: AuthOptions = {
             where: { steamId: token.sub! }
           })
           if (dbUser) {
-            (session.user as any).id = dbUser.id
+            (session.user as any).id = String(dbUser.id)
+(session.user as any).balance = Number(dbUser.balance)
             (session.user as any).balance = dbUser.balance
           }
         } catch {}
