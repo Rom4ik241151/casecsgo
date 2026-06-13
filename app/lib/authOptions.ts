@@ -32,11 +32,10 @@ export const authOptions: AuthOptions = {
     }
   ],
   callbacks: {
-    async signIn({ user, profile }) {
+    async signIn({ user }) {
       try {
         const steamId = user.id
         if (!steamId) return true
-
         await prisma.user.upsert({
           where: { steamId },
           update: {
@@ -60,16 +59,13 @@ export const authOptions: AuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).steamId = token.sub
-        
-        // Подтягиваем id из БД
         try {
           const dbUser = await prisma.user.findUnique({
             where: { steamId: token.sub! }
           })
           if (dbUser) {
-            (session.user as any).id = String(dbUser.id)
-(session.user as any).balance = Number(dbUser.balance)
-            (session.user as any).balance = dbUser.balance
+            (session.user as any).id = dbUser.id as unknown as string
+            ;(session.user as any).balance = dbUser.balance
           }
         } catch {}
       }
