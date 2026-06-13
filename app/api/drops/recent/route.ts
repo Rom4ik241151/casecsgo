@@ -12,17 +12,19 @@ export async function GET() {
   })
 
   return NextResponse.json(drops.map(d => ({
-    id: d.id,
-    name: d.name,
-    price: d.price,
-    color: d.color,
-    caseName: d.caseName,
-    username: d.user?.username || 'Игрок',
-    avatar: d.user?.avatar || null,
-    steamId: d.user?.steamId || null,
-  })), {
-    headers: {
-      'Cache-Control': 'no-store, no-cache, must-revalidate',
-    }
-  })
+  id: d.id,
+  type: 'drop',
+  name: d.name,
+  price: d.price,
+  color: d.color,
+  caseName: d.caseName,
+  username: d.user?.username || 'Игрок',
+  avatar: d.user?.avatar || null,
+  steamId: d.user?.steamId || null,
+  createdAt: d.createdAt,
+})), {
+  headers: {
+    'Cache-Control': 'no-store, no-cache, must-revalidate',
+  }
+})
 }

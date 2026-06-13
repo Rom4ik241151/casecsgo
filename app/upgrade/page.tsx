@@ -95,6 +95,20 @@ export default function UpgradePage() {
           setSpinning(false)
           setAnimating(false)
           removeFromInventory(mySkin.uid)
+          // Сохраняем апгрейд в БД
+fetch('/api/upgrades', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    fromName: mySkin.name,
+    fromPrice: mySkin.price,
+    fromImage: mySkin.image,
+    toName: targetSkin.name,
+    toPrice: targetSkin.price,
+    toImage: targetSkin.image,
+    won: isWin,
+  })
+}).catch(() => {})
           if (isWin) addToInventory({ ...targetSkin, color: '#e84b6a' }, 'Апгрейдер')
         }, 4100)
       })

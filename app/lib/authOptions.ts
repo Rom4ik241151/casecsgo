@@ -1,4 +1,5 @@
 import { AuthOptions } from 'next-auth'
+import { prisma } from '@/lib/prisma'
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -31,9 +32,45 @@ export const authOptions: AuthOptions = {
     }
   ],
   callbacks: {
+    async signIn({ user, profile }) {
+      try {
+        const steamId = user.id
+        if (!steamId) return true
+
+        await prisma.user.upsert({
+          where: { steamId },
+          update: {
+            username: user.name ?? 'Игрок',
+            avatar: user.image ?? null,
+            lastSeen: new Date(),
+          },
+          create: {
+            steamId,
+            username: user.name ?? 'Игрок',
+            avatar: user.image ?? null,
+            balance: 1000,
+            totalWon: 0,
+          }
+        })
+      } catch (e) {
+        console.error('signIn error:', e)
+      }
+      return true
+    },
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).steamId = token.sub
+        
+        // Подтягиваем id из БД
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { steamId: token.sub! }
+          })
+          if (dbUser) {
+            (session.user as any).id = dbUser.id
+            (session.user as any).balance = dbUser.balance
+          }
+        } catch {}
       }
       return session
     }

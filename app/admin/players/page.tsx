@@ -11,7 +11,8 @@ export default function PlayersPage() {
   const fetchPlayers = async () => {
     setLoading(true)
     const res = await fetch('/api/admin/players')
-    const data = await res.json()
+    const text = await res.text()
+const data = text ? JSON.parse(text) : []
     if (Array.isArray(data)) setPlayers(data)
     setLoading(false)
   }

@@ -19,6 +19,7 @@ model User {
   lastSeen    DateTime @default(now())
   inventory   InventoryItem[]
   drops       Drop[]
+  upgrades  Upgrade[]
 }
 
 model InventoryItem {
@@ -85,4 +86,17 @@ model CaseItem {
   
   dropRate  Float    @default(1.0)
   createdAt DateTime @default(now())
+}
+model Upgrade {
+  id        String   @id @default(cuid())
+  userId    String
+  fromName  String
+  fromPrice Float
+  fromImage String
+  toName    String
+  toPrice   Float
+  toImage   String
+  won       Boolean
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
