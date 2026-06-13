@@ -10,24 +10,15 @@ export async function POST(req: NextRequest) {
     // Пробуем получить сессию
     const session = await getServerSession(authOptions)
     
-    // Ищем юзера по steamId или берём первого
     let userId: string | null = null
-    
-    if (session?.user) {
-      const steamId = (session.user as any).steamId
-      if (steamId) {
-        const user = await prisma.user.findUnique({ where: { steamId } })
-        if (user) userId = user.id
-      }
-    }
-    
-    // Если нет юзера — берём первого из БД
-    if (!userId) {
-      const firstUser = await prisma.user.findFirst()
-      if (firstUser) userId = firstUser.id
-    }
-    
-    if (!userId) return NextResponse.json({ error: 'Нет юзера' }, { status: 400 })
+if (session?.user) {
+  const steamId = (session.user as any).steamId
+  if (steamId) {
+    const user = await prisma.user.findUnique({ where: { steamId } })
+    if (user) userId = user.id
+  }
+}
+if (!userId) return NextResponse.json({ error: 'Нет юзера' }, { status: 400 })
 
     const upgrade = await prisma.upgrade.create({
       data: {

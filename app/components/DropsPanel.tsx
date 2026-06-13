@@ -28,7 +28,7 @@ export default function DropsPanel() {
       }).catch(() => {})
     }
     fetchAll()
-    const interval = setInterval(fetchAll, 5000)
+    const interval = setInterval(fetchAll, 1000)
     return () => clearInterval(interval)
   }, [])
 
