@@ -403,7 +403,7 @@ else if (hasRare) playSound('win', muted, activeAudiosRef.current)
           <div style={{ background: 'rgba(233,69,96,0.12)', padding: '10px 24px', borderRadius: '50px', border: '1px solid rgba(233,69,96,0.4)', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '20px' }}>💰</span>
             <span style={{ color: '#e94560', fontWeight: 'bold', fontSize: '20px', fontFamily: 'monospace' }}>
-              {balance.toLocaleString()} ₽
+              {balance.toFixed(2)} ₽
             </span>
           </div>
           <button

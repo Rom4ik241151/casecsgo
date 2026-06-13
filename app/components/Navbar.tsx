@@ -17,7 +17,7 @@ export default function Navbar() {
           CaseCSGO
         </div>
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-          <span style={{ color: '#e94560', fontWeight: 'bold' }}>{balance} руб</span>
+          <span style={{ color: '#e94560', fontWeight: 'bold' }}>{balance.toFixed(2)} руб</span>
           <button onClick={() => router.push('/upgrade')} style={{
   background: 'transparent', border: '1px solid #e94560', color: '#e94560',
   padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'
@@ -43,7 +43,7 @@ export default function Navbar() {
                 width: '220px', zIndex: 1000
               }}>
                 <p style={{ color: '#888', fontSize: '12px', marginBottom: '4px' }}>Баланс</p>
-                <p style={{ color: '#e94560', fontWeight: 'bold', marginBottom: '12px' }}>{balance} руб</p>
+                <p style={{ color: '#e94560', fontWeight: 'bold', marginBottom: '12px' }}>{balance.toFixed(2)} руб</p>
                 <p style={{ color: '#888', fontSize: '12px', marginBottom: '4px' }}>Выиграно за всё время</p>
                 <p style={{ color: '#4CAF50', fontWeight: 'bold', marginBottom: '16px' }}>{totalWon} руб</p>
                 <button onClick={() => { router.push('/inventory'); setProfileOpen(false) }} style={{

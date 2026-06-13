@@ -21,7 +21,7 @@ export const authOptions: AuthOptions = {
       token: 'https://steamcommunity.com/openid/login',
       userinfo: 'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/',
       profile(profile: any) {
-        console.log('STEAM PROFILE:', JSON.stringify(profile))
+        
         const player = profile.response?.players?.[0] ?? profile
         return {
           id: player.steamid ?? profile.steamid,

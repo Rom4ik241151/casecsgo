@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import SessionProvider from './components/SessionProvider'
+import AuthProvider from './components/AuthProvider'
 
 export const metadata: Metadata = {
   title: 'OtakuCase',
@@ -13,7 +15,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru">
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        <SessionProvider>
+          <AuthProvider />
+          {children}
+        </SessionProvider>
+      </body>
     </html>
   )
 }

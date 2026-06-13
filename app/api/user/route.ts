@@ -6,8 +6,8 @@ export async function POST(req: NextRequest) {
   const { steamId, username, avatar } = await req.json()
   const user = await prisma.user.upsert({
     where: { steamId },
-    update: { username, avatar },
-    create: { steamId, username, avatar }
+    update: { username, avatar, lastSeen: new Date() },
+create: { steamId, username, avatar, lastSeen: new Date() }
   })
   return NextResponse.json(user)
 }

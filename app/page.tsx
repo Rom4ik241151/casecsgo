@@ -240,7 +240,7 @@ useEffect(() => {
             }}>
               <span style={{ fontSize: '20px' }}>💰</span>
               <span style={{ color: '#e94560', fontWeight: 'bold', fontSize: '20px', fontFamily: 'monospace' }}>
-                {balance.toLocaleString()} ₽
+                {balance.toFixed(2)} ₽
               </span>
             </div>
           )}
