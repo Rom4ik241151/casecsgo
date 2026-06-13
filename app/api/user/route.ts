@@ -6,8 +6,8 @@ export async function POST(req: NextRequest) {
   const { steamId, username, avatar } = await req.json()
   const user = await prisma.user.upsert({
     where: { steamId },
-    update: { username, avatar, lastSeen: new Date() },
-    create: { steamId, username, avatar, lastSeen: new Date() }
+    update: { username, avatar },
+    create: { steamId, username, avatar }
   })
   return NextResponse.json(user)
 }
@@ -16,15 +16,11 @@ export async function PATCH(req: NextRequest) {
   const { steamId, balance } = await req.json()
   const user = await prisma.user.update({
     where: { steamId },
-    data: { balance, lastSeen: new Date() }
+    data: { balance }
   })
   return NextResponse.json(user)
 }
 
 export async function GET() {
-  const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000)
-  const count = await prisma.user.count({
-    where: { lastSeen: { gte: twoMinutesAgo } }
-  })
-  return NextResponse.json({ online: count })
+  return NextResponse.json({ online: 1 })
 }

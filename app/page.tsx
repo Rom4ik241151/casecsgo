@@ -65,11 +65,18 @@ export default function Home() {
     if (su) {
       try {
         const user = JSON.parse(decodeURIComponent(su))
-        document.cookie = `steam_user=${encodeURIComponent(JSON.stringify(user))}; max-age=${60 * 60 * 24 * 7}; path=/`
+        document.cookie = `steam_user=${encodeURIComponent(JSON.stringify(user))}; max-age=${60*60*24*7}; path=/`
         setSteamUser(user)
         window.history.replaceState({}, '', '/')
+        fetch('/api/user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ steamId: user.steamId, username: user.name, avatar: user.avatar })
+        }).then(r => r.json()).then(dbUser => {
+          if (dbUser?.balance !== undefined) useStore.setState({ balance: dbUser.balance })
+        }).catch(() => {})
       } catch {}
-  }
+    }
     const cookies = document.cookie.split(';')
     const steamCookie = cookies.find(c => c.trim().startsWith('steam_user='))
     if (steamCookie) {
@@ -94,7 +101,11 @@ useEffect(() => {
       if (!steamCookie) return
       try {
         const user = JSON.parse(decodeURIComponent(steamCookie.split('=')[1]))
-        fetch(`/api/user?steamId=${user.steamId}`)
+        fetch('/api/user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ steamId: user.steamId, username: user.name, avatar: user.avatar })
+        })
           .then(r => r.json())
           .then(dbUser => {
             if (dbUser?.balance !== undefined) useStore.setState({ balance: dbUser.balance })
@@ -204,7 +215,7 @@ useEffect(() => {
         </div>
 
         <div style={{ display: 'flex', gap: '40px' }}>
-          {[['/', 'Кейсы'], ['/upgrade', 'Апгрейд'], ['/roulette', 'Рулетка'], ['/contracts', 'Контракты']].map(([href, label]) => (
+          {[['/', 'Кейсы'], ['/upgrade', 'Апгрейд'], ['/contracts', 'Контракты']].map(([href, label]) => (
             <span
               key={href}
               onClick={() => router.push(href)}

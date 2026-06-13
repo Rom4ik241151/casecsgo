@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 export const useStore = create((set, get) => ({
-  balance: 1000,
+  balance: 0,
 steamUser: null,
 setSteamUser: (user) => set({ steamUser: user }),
 
@@ -31,7 +31,7 @@ setSteamUser: (user) => set({ steamUser: user }),
         body: JSON.stringify({ steamId: steamUser.steamId, balance: newBalance })
       })
     }
-    return { balance: newBalance, totalEarned: state.totalEarned + amount }
+    return { balance: newBalance }
   }),
 
   // ====== DROPS ======

@@ -3,24 +3,18 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-const CASE_IMAGES: Record<string, string> = {
-  'Замерзший Реликт': '/cases/Frozen-Relic-Case.png',
-  'Лунная Сакура': '/cases/Moon-Sakura-Case.png',
-  'Древний Свиток': '/cases/Ancient-Scroll-Case.png',
-  'Неоновое Ядро': '/cases/Neon-Core-Case.png',
-}
-
-const CASE_IDS: Record<string, number> = {
-  'Древний Свиток': 1,
-  'Замерзший Реликт': 2,
-  'Лунная Сакура': 3,
-  'Неоновое Ядро': 4,
-}
 
 export default function DropsPanel() {
   const [drops, setDrops] = useState<any[]>([])
+  const [cases, setCases] = useState<any[]>([])
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    fetch('/api/cases').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setCases(data)
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     const fetchDrops = () => {
@@ -63,7 +57,7 @@ export default function DropsPanel() {
         borderBottom: '1px solid rgba(255,255,255,0.04)',
         display: 'flex', alignItems: 'center', gap: '8px',
         position: 'sticky', top: 0, zIndex: 10,
-        background: '#08080f',
+        background: 'rgba(5,5,20,0.95)',
       }}>
         <span style={{
           width: '7px', height: '7px', borderRadius: '50%',
@@ -90,7 +84,8 @@ export default function DropsPanel() {
 
       {drops.map((drop, i) => {
         const isHovered = hoveredId === drop.id
-        const caseImg = CASE_IMAGES[drop.caseName]
+        const caseData = cases.find(c => c.name === drop.caseName)
+        const caseImg = caseData?.image || null
 
         return (
           <div
@@ -208,7 +203,7 @@ export default function DropsPanel() {
 
                 {/* Кейс — правая (шире) */}
 <div
-  onClick={() => { const id = CASE_IDS[drop.caseName]; if (id) router.push(`/case/${id}`) }}
+  onClick={() => { const c = cases.find(c => c.name === drop.caseName); if (c) router.push(`/case/${c.id}`) }}
   style={{
     flex: 1,
     display: 'flex', flexDirection: 'column',

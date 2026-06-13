@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useStore } from '../store'
+import DropsPanel from '../components/DropsPanel'
 
 const proxyImage = (url: string) => `/api/image-proxy?url=${encodeURIComponent(url)}`
 
@@ -118,34 +119,124 @@ export default function UpgradePage() {
   })
 
   return (
-    <main style={{ minHeight: '100vh', background: '#0a0a14', color: 'white' }}>
-      <style>{`
+    <main style={{ minHeight: '100vh', background: '#0a0a14', color: 'white', display: 'flex', flexDirection: 'column' }}>
+      <style suppressHydrationWarning>{`
+      .nav-item-upgrade {
+          position: relative;
+          transition: all 0.3s ease;
+        }
+        .nav-item-upgrade::after {
+          content: "";
+          position: absolute;
+          bottom: -6px; left: 0;
+          width: 0%; height: 2px;
+          background: linear-gradient(90deg, #e94560, #ff6b6b);
+          transition: width 0.3s ease;
+          border-radius: 2px;
+        }
+        .nav-item-upgrade:hover::after { width: 100%; }
+        .nav-item-upgrade-active::after { width: 100% !important; }
         body { background: #0a0a14; }
         .upgrade-bg {
           position: fixed; inset: 0; z-index: 0; pointer-events: none;
           background: 
-            radial-gradient(ellipse at 20% 50%, rgba(232,75,106,0.08) 0%, transparent 50%),
-            radial-gradient(ellipse at 80% 20%, rgba(76,175,80,0.06) 0%, transparent 50%),
-            radial-gradient(ellipse at 50% 80%, rgba(139,68,255,0.06) 0%, transparent 50%);
+            radial-gradient(ellipse at 20% 50%, rgba(232,75,106,0.12) 0%, transparent 50%),
+            radial-gradient(ellipse at 80% 20%, rgba(76,175,80,0.08) 0%, transparent 50%),
+            radial-gradient(ellipse at 50% 80%, rgba(139,68,255,0.08) 0%, transparent 50%);
         }
-        @keyframes pulse-win { 0%{box-shadow:0 0 0 0 rgba(76,175,80,0);border-color:#1e2a4a} 50%{box-shadow:0 0 60px 20px rgba(76,175,80,0.6);border-color:#4caf50} 100%{box-shadow:0 0 0 0 rgba(76,175,80,0);border-color:#1e2a4a} }
-        @keyframes pulse-lose { 0%{box-shadow:0 0 0 0 rgba(232,75,106,0);border-color:#1e2a4a} 50%{box-shadow:0 0 60px 20px rgba(232,75,106,0.6);border-color:#e84b6a} 100%{box-shadow:0 0 0 0 rgba(232,75,106,0);border-color:#1e2a4a} }
-        @keyframes spin-glow { 0%{filter:drop-shadow(0 0 8px #e84b6a)} 50%{filter:drop-shadow(0 0 20px #e84b6a)} 100%{filter:drop-shadow(0 0 8px #e84b6a)} }
-        .skin-card:hover { transform: translateY(-3px); border-color: #e84b6a44 !important; }
+        @keyframes pulse-win { 
+          0%{box-shadow:0 0 0 0 rgba(76,175,80,0);border-color:#1e2a4a} 
+          50%{box-shadow:0 0 80px 30px rgba(76,175,80,0.7);border-color:#4caf50} 
+          100%{box-shadow:0 0 0 0 rgba(76,175,80,0);border-color:#1e2a4a} 
+        }
+        @keyframes pulse-lose { 
+          0%{box-shadow:0 0 0 0 rgba(232,75,106,0);border-color:#1e2a4a} 
+          50%{box-shadow:0 0 80px 30px rgba(232,75,106,0.7);border-color:#e84b6a} 
+          100%{box-shadow:0 0 0 0 rgba(232,75,106,0);border-color:#1e2a4a} 
+        }
+        @keyframes spin-glow { 
+          0%{box-shadow:0 0 20px rgba(232,75,106,0.4)} 
+          50%{box-shadow:0 0 40px rgba(232,75,106,0.8), 0 0 80px rgba(232,75,106,0.3)} 
+          100%{box-shadow:0 0 20px rgba(232,75,106,0.4)} 
+        }
+        @keyframes float {
+          0%,100%{transform:translateY(0px)}
+          50%{transform:translateY(-8px)}
+        }
+        @keyframes wheelGlow {
+          0%,100%{filter:drop-shadow(0 0 10px rgba(232,75,106,0.3))}
+          50%{filter:drop-shadow(0 0 25px rgba(232,75,106,0.7))}
+        }
+        @keyframes shimmer {
+          0%{background-position:0% 50%}
+          50%{background-position:100% 50%}
+          100%{background-position:0% 50%}
+        }
+        .skin-card { transition: all 0.25s ease !important; }
+        .skin-card:hover { transform: translateY(-4px) scale(1.03) !important; border-color: #e84b6a66 !important; box-shadow: 0 8px 25px rgba(232,75,106,0.2) !important; }
+        .upgrade-btn {
+          background: linear-gradient(135deg, #e84b6a, #c0392b, #e84b6a);
+          background-size: 200% auto;
+          animation: shimmer 3s ease infinite;
+          box-shadow: 0 6px 30px rgba(232,75,106,0.5), 0 0 60px rgba(232,75,106,0.2);
+          transition: all 0.3s ease;
+        }
+        .upgrade-btn:hover {
+          transform: translateY(-3px) scale(1.05) !important;
+          box-shadow: 0 10px 40px rgba(232,75,106,0.7), 0 0 80px rgba(232,75,106,0.3) !important;
+        }
+        .upgrade-btn:active { transform: scale(0.97) !important; }
       `}</style>
 
-      <nav style={{ background: 'rgba(10,10,20,0.95)', backdropFilter: 'blur(10px)', borderBottom: '1px solid #1e2a4a', padding: '0 24px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
-        <span onClick={() => router.push('/')} style={{ color: '#e84b6a', fontWeight: 'bold', fontSize: '22px', cursor: 'pointer' }}>OtakuCase</span>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {([['/', '🎁 Кейсы'], ['/upgrade', '⚡ Апгрейд'], ['/roulette', '🎰 Рулетка'], ['/contracts', '📋 Контракты']] as [string, string][]).map(([href, label]) => (
-            <span key={href} onClick={() => router.push(href)} style={{ padding: '7px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', background: href === '/upgrade' ? '#e84b6a' : 'transparent', color: href === '/upgrade' ? 'white' : '#888', border: href === '/upgrade' ? 'none' : '1px solid #1e2a4a', transition: 'all 0.2s' }}>{label}</span>
+      <nav style={{
+        background: 'rgba(8,8,20,0.98)', backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(233,69,96,0.3)',
+        padding: '0 30px', height: '80px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        position: 'sticky', top: 0, zIndex: 100,
+        boxShadow: '0 4px 30px rgba(0,0,0,0.5)'
+      }}>
+        <span onClick={() => router.push('/')} style={{
+          cursor: 'pointer', fontSize: '36px', fontWeight: '800',
+          letterSpacing: '-1px',
+          background: 'linear-gradient(90deg, #ffffff 0%, #e94560 30%, #ff6b6b 60%, #ffffff 100%)',
+          backgroundSize: '200% auto',
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          animation: 'shimmer 3s ease infinite',
+        }}>OtakuCase</span>
+
+        <div style={{ display: 'flex', gap: '30px' }}>
+          {([['/', 'Кейсы'], ['/upgrade', 'Апгрейд'], ['/contracts', 'Контракты']] as [string, string][]).map(([href, label]) => (
+            <span key={href} onClick={() => router.push(href)}
+              className={`nav-item-upgrade ${href === '/upgrade' ? 'nav-item-upgrade-active' : ''}`}
+              style={{
+                padding: '6px 0', fontSize: '15px',
+                fontWeight: '500', cursor: 'pointer',
+                color: href === '/upgrade' ? '#fff' : '#888',
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = '#e94560'}
+              onMouseLeave={e => e.currentTarget.style.color = href === '/upgrade' ? '#fff' : '#888'}
+            >{label}</span>
           ))}
         </div>
-        <span style={{ color: '#e84b6a', fontWeight: 'bold', fontSize: '16px' }}>{balance.toLocaleString()} ₽</span>
+
+        <div style={{
+          background: 'rgba(233,69,96,0.12)', padding: '10px 24px',
+          borderRadius: '50px', border: '1px solid rgba(233,69,96,0.4)',
+          display: 'flex', alignItems: 'center', gap: '8px'
+        }}>
+          <span style={{ fontSize: '18px' }}>💰</span>
+          <span style={{ color: '#e94560', fontWeight: 'bold', fontSize: '18px', fontFamily: 'monospace' }}>
+            {balance.toLocaleString()} ₽
+          </span>
+        </div>
       </nav>
 
       <div className="upgrade-bg" />
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '28px 20px', position: 'relative', zIndex: 1 }}>
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        <DropsPanel />
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '28px 20px', position: 'relative', zIndex: 1 }}>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px 1fr', gap: '20px', alignItems: 'start', marginBottom: '28px' }}>
 
@@ -182,7 +273,7 @@ export default function UpgradePage() {
             <div style={{ position: 'relative', width: '320px', height: '320px' }}>
               <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, #1a1a2e 60%, transparent 100%)', zIndex: 0 }} />
 
-              <svg width="320" height="320" style={{ position: 'relative', zIndex: 1 }}>
+              <svg width="320" height="320" style={{ position: 'relative', zIndex: 1, animation: 'wheelGlow 3s ease infinite' }}>
                 <defs>
                   <linearGradient id="chanceGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#ff6b81" />
@@ -256,14 +347,14 @@ export default function UpgradePage() {
               <button onClick={reset} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid #e84b6a', color: '#e84b6a', borderRadius: '12px', padding: '12px 28px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px' }}>Ещё раз</button>
             ) : (
               <button onClick={handleUpgrade} disabled={!mySkin || !targetSkin || spinning}
+                className={(!mySkin || !targetSkin || spinning) ? '' : 'upgrade-btn'}
                 style={{
-                  background: (!mySkin || !targetSkin || spinning) ? '#1e2a4a' : 'linear-gradient(135deg, #e84b6a, #c0392b)',
+                  background: (!mySkin || !targetSkin || spinning) ? '#1e2a4a' : undefined,
                   color: (!mySkin || !targetSkin || spinning) ? '#444' : 'white',
-                  border: 'none', borderRadius: '12px', padding: '14px 36px',
+                  border: 'none', borderRadius: '16px', padding: '16px 48px',
                   fontWeight: 'bold', cursor: (!mySkin || !targetSkin || spinning) ? 'not-allowed' : 'pointer',
-                  fontSize: '16px', transition: 'all 0.2s',
-                  boxShadow: (!mySkin || !targetSkin || spinning) ? 'none' : '0 6px 25px rgba(233,69,96,0.5)',
-                  animation: spinning ? 'spin-glow 1s infinite' : 'none'
+                  fontSize: '18px', letterSpacing: '1px',
+                  animation: 'none'
                 }}>
                 {spinning ? '⏳ Крутится...' : '⚡ Прокачать'}
               </button>
@@ -407,6 +498,8 @@ export default function UpgradePage() {
               </div>
             )}
           </div>
+        </div>
+      </div>
         </div>
       </div>
     </main>
