@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useStore } from '../store'
 
@@ -20,7 +20,8 @@ export default function UpgradePage() {
   const [targetSkin, setTargetSkin] = useState<any>(null)
   const [spinning, setSpinning] = useState(false)
   const [result, setResult] = useState<'win' | 'lose' | null>(null)
-  const [needleDeg, setNeedleDeg] = useState(270)
+  const [needleDeg, setNeedleDeg] = useState(0)
+  const [animating, setAnimating] = useState(false)
   const [dbItems, setDbItems] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [multiplier, setMultiplier] = useState<number | null>(null)
@@ -42,37 +43,61 @@ export default function UpgradePage() {
     if (suitable.length > 0) setTargetSkin(suitable[0])
   }, [multiplier, mySkin, dbItems])
 
+  // chance: процент победы
+  // Градиент: от 0° (12 часов, верх) по часовой до chance/100*360°
+  // Стрелка: начинается в 0° (верх), крутится по часовой
+  // Победа: finalAngle попал в [0, winZoneDeg)
   const chance = mySkin && targetSkin
     ? Math.min(75, Math.round((mySkin.price / targetSkin.price) * 100))
     : 0
 
   const R = 120
   const circumference = 2 * Math.PI * R
+  // Градиент начинается с 12 часов (transform="rotate(-90 160 160)")
   const strokeDash = (chance / 100) * circumference
-
-  const chanceColor = chance > 60 ? '#4caf50' : chance > 35 ? '#f5a623' : '#e84b6a'
 
   const handleUpgrade = () => {
     if (!mySkin || !targetSkin || spinning) return
+
+    const currentChance = Math.min(75, Math.round((mySkin.price / targetSkin.price) * 100))
+    const winZoneDeg = (currentChance / 100) * 360
+
+    // Определяем заранее: победа или нет
+    const isWin = Math.random() * 100 < currentChance
+
+    // Финальный угол в зоне победы или поражения
+    let finalAngle: number
+    if (isWin) {
+      // Случайный угол внутри победной зоны [0, winZoneDeg)
+      finalAngle = Math.random() * winZoneDeg
+    } else {
+      // Случайный угол в проигрышной зоне [winZoneDeg, 360)
+      finalAngle = winZoneDeg + Math.random() * (360 - winZoneDeg)
+    }
+
+    // Полных оборотов (5) + финальный угол
+    const totalSpin = 3 * 360 + finalAngle
+
     setSpinning(true)
     setResult(null)
+    setAnimating(false)
+    setNeedleDeg(0)
 
-    const win = Math.random() * 100 < chance
-    const winZone = chance / 100 * 360
-    const endAngle = win
-      ? Math.random() * winZone
-      : winZone + Math.random() * (360 - winZone)
-    const totalSpin = 1800 + endAngle
-    
+    // Два rAF чтобы сброс применился до старта анимации
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setAnimating(true)
+        setNeedleDeg(totalSpin)
 
-    setNeedleDeg(prev => prev + totalSpin)
-
-    setTimeout(() => {
-      setResult(win ? 'win' : 'lose')
-      setSpinning(false)
-      removeFromInventory(mySkin.uid)
-      if (win) addToInventory({ ...targetSkin, color: '#e84b6a' }, 'Апгрейдер')
-    }, 4000)
+        setTimeout(() => {
+          setResult(isWin ? 'win' : 'lose')
+          setSpinning(false)
+          setAnimating(false)
+          removeFromInventory(mySkin.uid)
+          if (isWin) addToInventory({ ...targetSkin, color: '#e84b6a' }, 'Апгрейдер')
+        }, 4100)
+      })
+    })
   }
 
   const reset = () => {
@@ -80,6 +105,8 @@ export default function UpgradePage() {
     setTargetSkin(null)
     setResult(null)
     setMultiplier(null)
+    setNeedleDeg(0)
+    setAnimating(false)
   }
 
   const filteredDb = dbItems.filter(item => {
@@ -93,7 +120,6 @@ export default function UpgradePage() {
   return (
     <main style={{ minHeight: '100vh', background: '#0a0a14', color: 'white' }}>
       <style>{`
-      @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
         body { background: #0a0a14; }
         .upgrade-bg {
           position: fixed; inset: 0; z-index: 0; pointer-events: none;
@@ -104,8 +130,6 @@ export default function UpgradePage() {
         }
         @keyframes pulse-win { 0%{box-shadow:0 0 0 0 rgba(76,175,80,0);border-color:#1e2a4a} 50%{box-shadow:0 0 60px 20px rgba(76,175,80,0.6);border-color:#4caf50} 100%{box-shadow:0 0 0 0 rgba(76,175,80,0);border-color:#1e2a4a} }
         @keyframes pulse-lose { 0%{box-shadow:0 0 0 0 rgba(232,75,106,0);border-color:#1e2a4a} 50%{box-shadow:0 0 60px 20px rgba(232,75,106,0.6);border-color:#e84b6a} 100%{box-shadow:0 0 0 0 rgba(232,75,106,0);border-color:#1e2a4a} }
-        @keyframes win-flash { 0%,100%{background:linear-gradient(135deg,#16213e,#1a1a2e)} 50%{background:linear-gradient(135deg,rgba(76,175,80,0.15),#1a1a2e)} }
-        @keyframes lose-flash { 0%,100%{background:linear-gradient(135deg,#16213e,#1a1a2e)} 50%{background:linear-gradient(135deg,rgba(232,75,106,0.15),#1a1a2e)} }
         @keyframes spin-glow { 0%{filter:drop-shadow(0 0 8px #e84b6a)} 50%{filter:drop-shadow(0 0 20px #e84b6a)} 100%{filter:drop-shadow(0 0 8px #e84b6a)} }
         .skin-card:hover { transform: translateY(-3px); border-color: #e84b6a44 !important; }
       `}</style>
@@ -123,17 +147,15 @@ export default function UpgradePage() {
       <div className="upgrade-bg" />
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '28px 20px', position: 'relative', zIndex: 1 }}>
 
-        {/* Верхняя панель */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px 1fr', gap: '20px', alignItems: 'start', marginBottom: '28px' }}>
 
           {/* Мой скин */}
           <div style={{
-            background: 'linear-gradient(135deg, #16213e, #1a1a2e)',
-            borderRadius: '20px',
-            border: `2px solid ${mySkin ? '#4caf5066' : '#1e2a4a'}`,
+            background: 'linear-gradient(135deg, #16213e, #1a1a2e)', borderRadius: '20px',
+            border: `2px solid ${result === 'lose' ? '#e84b6a' : mySkin ? '#4caf5066' : '#1e2a4a'}`,
             padding: '28px', minHeight: '240px',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
-            animation: result === 'lose' ? 'pulse-lose 1s ease' : result === 'win' ? '' : 'none',
+            animation: result === 'lose' ? 'pulse-lose 1s ease' : 'none',
             transition: 'border-color 0.3s'
           }}>
             <p style={{ color: '#555', fontSize: '11px', letterSpacing: '3px', marginBottom: '16px', fontWeight: 'bold' }}>ВАШ ПРЕДМЕТ</p>
@@ -149,57 +171,48 @@ export default function UpgradePage() {
               </>
             ) : (
               <div style={{ opacity: 0.4 }}>
-                {dbItems.length > 0 && <img src={proxyImage(dbItems[0].image)} style={{ width: '120px', height: '90px', objectFit: 'contain', marginBottom: '12px', filter: 'grayscale(1)' }} />}
+                {dbItems.length > 0 && <img src={proxyImage(dbItems[0].image)} style={{ width: '120px', height: '90px', objectFit: 'contain', marginBottom: '12px', filter: 'grayscale(1)' }} alt="" />}
                 <p style={{ fontSize: '14px', color: '#333' }}>Выберите предмет снизу</p>
               </div>
             )}
           </div>
 
-          {/* Центр */}
+          {/* Центр — колесо */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-
-            
-
-            {/* Большое колесо */}
             <div style={{ position: 'relative', width: '320px', height: '320px' }}>
-              {/* Фоновый градиент */}
               <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, #1a1a2e 60%, transparent 100%)', zIndex: 0 }} />
 
-              <svg width="320" height="320" style={{ transform: 'rotate(-90deg)', position: 'relative', zIndex: 1 }}>
+              <svg width="320" height="320" style={{ position: 'relative', zIndex: 1 }}>
                 <defs>
                   <linearGradient id="chanceGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor={chanceColor} />
-                    <stop offset="100%" stopColor={chanceColor + '88'} />
-                  </linearGradient>
-                  <linearGradient id="loseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#e84b6a" />
-                    <stop offset="100%" stopColor="#e84b6a88" />
+                    <stop offset="0%" stopColor="#ff6b81" />
+                    <stop offset="100%" stopColor="#e84b6a" />
                   </linearGradient>
                   <filter id="glow">
                     <feGaussianBlur stdDeviation="4" result="coloredBlur" />
                     <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
                   </filter>
                 </defs>
-                {/* Внешнее кольцо фон */}
-                <circle cx="160" cy="160" r={R} fill="none" stroke="#0d1117" strokeWidth="32" />
-                {/* Зона проигрыша */}
-                <circle cx="160" cy="160" r={R} fill="none" stroke="#e84b6a33" strokeWidth="32"
-                  strokeDasharray={`${((100 - chance) / 100) * circumference} ${circumference}`}
-                  strokeDashoffset={-strokeDash}
-                />
-                {/* Зона выигрыша */}
-                <circle cx="160" cy="160" r={R} fill="none" stroke="url(#chanceGrad)" strokeWidth="32"
+                {/* Фоновый круг (зона проигрыша) */}
+                <circle cx="160" cy="160" r={R} fill="none" stroke="#1e2a4a" strokeWidth="32" />
+                {/* Зона победы: начинается с 12 часов (rotate -90) идёт по часовой */}
+                <circle
+                  cx="160" cy="160" r={R}
+                  fill="none"
+                  stroke="url(#chanceGrad)"
+                  strokeWidth="32"
                   strokeDasharray={`${strokeDash} ${circumference}`}
                   strokeLinecap="butt"
                   filter="url(#glow)"
-                  style={{ transition: 'stroke-dasharray 0.6s cubic-bezier(0.4,0,0.2,1)' }}
+                  transform="rotate(-90 160 160)"
+                  style={{ transition: 'stroke-dasharray 0.6s ease' }}
                 />
-                {/* Внешний декор */}
+                {/* Декор */}
                 <circle cx="160" cy="160" r={R + 20} fill="none" stroke="#ffffff08" strokeWidth="1" />
                 <circle cx="160" cy="160" r={R - 20} fill="none" stroke="#ffffff08" strokeWidth="1" />
                 {/* Засечки */}
                 {Array.from({ length: 60 }).map((_, i) => {
-                  const angle = (i * 6 * Math.PI) / 180
+                  const angle = ((i * 6 - 90) * Math.PI) / 180
                   const isMajor = i % 5 === 0
                   const x1 = 160 + (R - (isMajor ? 18 : 10)) * Math.cos(angle)
                   const y1 = 160 + (R - (isMajor ? 18 : 10)) * Math.sin(angle)
@@ -209,18 +222,21 @@ export default function UpgradePage() {
                 })}
               </svg>
 
-              {/* Стрелка */}
+              {/* Стрелка — торчит вверх из центра, крутится по часовой */}
               <div style={{
-                position: 'absolute', bottom: '50%', left: '50%',
-                width: '4px', height: '110px',
+                position: 'absolute',
+                bottom: '50%',
+                left: '50%',
+                width: '4px',
+                height: '110px',
                 marginLeft: '-2px',
                 background: 'linear-gradient(to top, white, rgba(255,255,255,0.3))',
                 borderRadius: '4px 4px 0 0',
                 transformOrigin: 'bottom center',
                 transform: `rotate(${needleDeg}deg)`,
-                transition: spinning ? 'transform 4s cubic-bezier(0.12,0.8,0.15,1)' : 'none',
+                transition: animating ? 'transform 4s cubic-bezier(0.3, 0.9, 0.4, 1)' : 'none',
                 zIndex: 2,
-                filter: 'drop-shadow(0 0 4px white)'
+                filter: 'drop-shadow(0 0 4px white)',
               }} />
 
               {/* Центральный круг */}
@@ -228,22 +244,20 @@ export default function UpgradePage() {
                 {result === 'win' && <p style={{ color: '#4caf50', fontSize: '14px', fontWeight: 'bold', margin: 0 }}>WIN!</p>}
                 {result === 'lose' && <p style={{ color: '#e84b6a', fontSize: '14px', fontWeight: 'bold', margin: 0 }}>LOSE</p>}
                 {!result && <>
-                  <p style={{ color: chanceColor, fontSize: '20px', fontWeight: 'bold', margin: 0, transition: 'color 0.3s' }}>{chance}%</p>
+                  <p style={{ color: '#e84b6a', fontSize: '20px', fontWeight: 'bold', margin: 0 }}>{chance}%</p>
                   <p style={{ color: '#444', fontSize: '10px', margin: 0 }}>шанс</p>
                 </>}
               </div>
 
-              {/* Метка 0% и 75% */}
-              <div style={{ position: 'absolute', top: '2px', left: '50%', transform: 'translateX(-50%)', color: '#333', fontSize: '10px', zIndex: 4 }}>MAX 75%</div>
+              <div style={{ position: 'absolute', top: '2px', left: '50%', transform: 'translateX(-50%)', color: '#555', fontSize: '10px', zIndex: 4 }}>MAX 75%</div>
             </div>
 
-            {/* Кнопка */}
             {result ? (
               <button onClick={reset} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid #e84b6a', color: '#e84b6a', borderRadius: '12px', padding: '12px 28px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px' }}>Ещё раз</button>
             ) : (
               <button onClick={handleUpgrade} disabled={!mySkin || !targetSkin || spinning}
                 style={{
-                  background: (!mySkin || !targetSkin || spinning) ? '#1e2a4a' : `linear-gradient(135deg, #e84b6a, #c0392b)`,
+                  background: (!mySkin || !targetSkin || spinning) ? '#1e2a4a' : 'linear-gradient(135deg, #e84b6a, #c0392b)',
                   color: (!mySkin || !targetSkin || spinning) ? '#444' : 'white',
                   border: 'none', borderRadius: '12px', padding: '14px 36px',
                   fontWeight: 'bold', cursor: (!mySkin || !targetSkin || spinning) ? 'not-allowed' : 'pointer',
@@ -254,7 +268,7 @@ export default function UpgradePage() {
                 {spinning ? '⏳ Крутится...' : '⚡ Прокачать'}
               </button>
             )}
-            {/* Пресеты */}
+
             <div style={{ display: 'flex', gap: '8px' }}>
               {CHANCE_PRESETS.map(p => (
                 <button key={p.label} onClick={() => setMultiplier(p.mult)} disabled={!mySkin}
@@ -273,9 +287,8 @@ export default function UpgradePage() {
 
           {/* Цель */}
           <div style={{
-            background: 'linear-gradient(135deg, #16213e, #1a1a2e)',
-            borderRadius: '20px',
-            border: `2px solid ${targetSkin ? '#e84b6a66' : '#1e2a4a'}`,
+            background: 'linear-gradient(135deg, #16213e, #1a1a2e)', borderRadius: '20px',
+            border: `2px solid ${result === 'win' ? '#4caf50' : targetSkin ? '#e84b6a66' : '#1e2a4a'}`,
             padding: '28px', minHeight: '240px',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
             animation: result === 'win' ? 'pulse-win 1s ease' : 'none',
@@ -288,19 +301,18 @@ export default function UpgradePage() {
                   style={{ width: '150px', height: '110px', objectFit: 'contain', marginBottom: '12px', filter: 'drop-shadow(0 6px 16px rgba(233,69,96,0.5))' }} />
                 <p style={{ color: '#fff', fontWeight: 'bold', fontSize: '14px', marginBottom: '6px' }}>{targetSkin.name}</p>
                 <p style={{ color: '#e84b6a', fontWeight: 'bold', fontSize: '22px', marginBottom: '12px' }}>{targetSkin.price} ₽</p>
-                <button onClick={() => { setTargetSkin(null); setResult(null); setMultiplier(null) }}
+                <button onClick={() => { setTargetSkin(null); setMySkin(null); setResult(null); setMultiplier(null) }}
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid #333', color: '#888', borderRadius: '8px', padding: '6px 16px', cursor: 'pointer', fontSize: '12px' }}>Сменить</button>
               </>
             ) : (
               <div style={{ opacity: 0.4 }}>
-                {dbItems.length > 0 && <img src={proxyImage(dbItems[Math.floor(dbItems.length / 2)].image)} style={{ width: '120px', height: '90px', objectFit: 'contain', marginBottom: '12px', filter: 'grayscale(1)' }} />}
+                {dbItems.length > 0 && <img src={proxyImage(dbItems[Math.floor(dbItems.length / 2)].image)} style={{ width: '120px', height: '90px', objectFit: 'contain', marginBottom: '12px', filter: 'grayscale(1)' }} alt="" />}
                 <p style={{ fontSize: '14px', color: '#333' }}>Нажмите x2/x5 или выберите снизу</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Результат */}
         {result === 'win' && (
           <div style={{ textAlign: 'center', marginBottom: '20px', padding: '20px', background: 'linear-gradient(135deg, rgba(76,175,80,0.15), rgba(76,175,80,0.05))', borderRadius: '16px', border: '1px solid rgba(76,175,80,0.4)', boxShadow: '0 0 30px rgba(76,175,80,0.2)' }}>
             <p style={{ fontSize: '32px', margin: '0 0 8px' }}>🎉</p>
@@ -313,9 +325,8 @@ export default function UpgradePage() {
             <p style={{ color: '#e84b6a', fontWeight: 'bold', fontSize: '22px', margin: 0 }}>Не повезло! Скин потерян.</p>
           </div>
         )}
-        {/* Нижняя панель */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
 
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
           {/* Инвентарь */}
           <div style={{ background: 'linear-gradient(135deg, #16213e, #1a1a2e)', borderRadius: '20px', padding: '20px', border: '1px solid #1e2a4a' }}>
             <h2 style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '16px', color: '#888', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -330,11 +341,9 @@ export default function UpgradePage() {
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '10px', maxHeight: '340px', overflowY: 'auto' }}>
                 {inventory.map((item: any) => (
-                 <div key={item.uid} className="skin-card" onClick={() => { setMySkin(item); setResult(null); setMultiplier(null) }}
+                  <div key={item.uid} className="skin-card" onClick={() => { setMySkin(item); setResult(null); setMultiplier(null) }}
                     style={{
-                      background: mySkin?.uid === item.uid
-                        ? 'linear-gradient(135deg, rgba(76,175,80,0.2), rgba(76,175,80,0.05))'
-                        : 'linear-gradient(135deg, #0d1117, #16213e)',
+                      background: mySkin?.uid === item.uid ? 'linear-gradient(135deg, rgba(76,175,80,0.2), rgba(76,175,80,0.05))' : 'linear-gradient(135deg, #0d1117, #16213e)',
                       borderRadius: '14px', padding: '14px', textAlign: 'center', cursor: 'pointer',
                       border: `1px solid ${mySkin?.uid === item.uid ? '#4caf50' : '#1e2a4a'}`,
                       transition: 'all 0.2s',
@@ -376,9 +385,7 @@ export default function UpgradePage() {
                   return (
                     <div key={skin.id} className="skin-card" onClick={() => { setTargetSkin(skin); setResult(null) }}
                       style={{
-                        background: targetSkin?.id === skin.id
-                          ? 'linear-gradient(135deg, rgba(233,69,96,0.2), rgba(233,69,96,0.05))'
-                          : 'linear-gradient(135deg, #0d1117, #16213e)',
+                        background: targetSkin?.id === skin.id ? 'linear-gradient(135deg, rgba(233,69,96,0.2), rgba(233,69,96,0.05))' : 'linear-gradient(135deg, #0d1117, #16213e)',
                         borderRadius: '14px', padding: '14px', textAlign: 'center', cursor: 'pointer',
                         border: `1px solid ${targetSkin?.id === skin.id ? '#e84b6a' : '#1e2a4a'}`,
                         transition: 'all 0.2s',
