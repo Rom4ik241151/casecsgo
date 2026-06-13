@@ -13,10 +13,14 @@ create: { steamId, username, avatar, lastSeen: new Date() }
 }
 
 export async function PATCH(req: NextRequest) {
-  const { steamId, balance } = await req.json()
+  const { steamId, balance, tradeUrl } = await req.json()
+  const data: any = {}
+  if (balance !== undefined) data.balance = balance
+  if (tradeUrl !== undefined) data.tradeUrl = tradeUrl
+
   const user = await prisma.user.update({
     where: { steamId },
-    data: { balance }
+    data
   })
   return NextResponse.json(user)
 }

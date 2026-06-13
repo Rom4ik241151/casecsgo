@@ -13,19 +13,22 @@ model User {
   steamId     String?  @unique
   username    String   @default("Игрок")
   avatar      String?
+  tradeUrl    String?
   balance     Int      @default(1000)
   totalWon    Int      @default(0)
+  banned      Boolean  @default(false)
   createdAt   DateTime @default(now())
   lastSeen    DateTime @default(now())
   inventory   InventoryItem[]
   drops       Drop[]
-  upgrades  Upgrade[]
+  upgrades    Upgrade[]
 }
 
 model InventoryItem {
   id        String   @id @default(cuid())
   userId    String
   name      String
+  image     String?
   rarity    String
   price     Int
   color     String
@@ -38,6 +41,8 @@ model Drop {
   id        String   @id @default(cuid())
   userId    String
   name      String
+  image     String?
+  rarity    String?
   price     Int
   color     String
   caseName  String

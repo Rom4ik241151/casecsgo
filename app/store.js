@@ -49,21 +49,49 @@ setSteamUser: (user) => set({ steamUser: user }),
 
   // ====== INVENTORY ======
   addToInventory: (item, caseName) =>
-    set((state) => ({
-      inventory: [
-        {
-          ...item,
-          caseName,
-          uid: Date.now() + Math.random()
-        },
-        ...state.inventory
-      ]
-    })),
+    set((state) => {
+      const uid = Date.now() + Math.random()
+      const steamUser = state.steamUser
+      if (steamUser?.steamId) {
+        fetch('/api/inventory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ steamId: steamUser.steamId, item, caseName })
+        })
+          .then(r => r.json())
+          .then(created => {
+            if (created?.id) {
+              set((s) => ({
+                inventory: s.inventory.map(i => i.uid === uid ? { ...i, dbId: created.id } : i)
+              }))
+            }
+          })
+          .catch(() => {})
+      }
+      return {
+        inventory: [
+          { ...item, caseName, uid },
+          ...state.inventory
+        ]
+      }
+    }),
 
   removeFromInventory: (uid) =>
-    set((state) => ({
-      inventory: state.inventory.filter(i => i.uid !== uid)
-    })),
+    set((state) => {
+      const item = state.inventory.find(i => i.uid === uid)
+      if (item?.dbId) {
+        fetch('/api/inventory', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: item.dbId })
+        }).catch(() => {})
+      }
+      return {
+        inventory: state.inventory.filter(i => i.uid !== uid)
+      }
+    }),
+
+  setBalance: (balance) => set({ balance }),
 
   sellItem: (item) =>
   set((state) => {
