@@ -71,7 +71,6 @@ export default function ProfilePage() {
       setGhostItems(shuffled.slice(0, 8))
     }
   })
-  .catch(() => {})
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setGhostItems(data.slice(0, 8)) })
       .catch(() => {})
