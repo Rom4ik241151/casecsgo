@@ -29,6 +29,13 @@ export default function UpgradePage() {
   const [minPrice, setMinPrice] = useState(0)
   const [maxPrice, setMaxPrice] = useState(999999)
   const [showConfetti, setShowConfetti] = useState(false)
+  const [luckModifier, setLuckModifier] = useState(1.0)
+
+  useEffect(() => {
+    fetch('/api/user/luck').then(r => r.json()).then(d => {
+      if (typeof d?.luckModifier === 'number') setLuckModifier(d.luckModifier)
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     fetch('/api/items').then(r => r.json()).then(data => {
@@ -59,7 +66,10 @@ export default function UpgradePage() {
     if (!mySkin || !targetSkin || spinning) return
     const currentChance = Math.min(75, Math.round((mySkin.price / targetSkin.price) * 100))
     const winZoneDeg = (currentChance / 100) * 360
-    const isWin = Math.random() * 100 < currentChance
+    // currentChance — то, что ВИДИТ игрок (не меняем)
+    // realChance — то, что реально используется для броска (скрытый модификатор)
+    const realChance = Math.min(95, Math.max(0, currentChance * luckModifier))
+    const isWin = Math.random() * 100 < realChance
     let finalAngle: number
     if (isWin) {
       finalAngle = Math.random() * winZoneDeg

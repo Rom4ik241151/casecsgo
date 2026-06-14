@@ -9,31 +9,32 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  steamId     String?  @unique
-  username    String   @default("Игрок")
-  avatar      String?
-  tradeUrl    String?
-  balance     Int      @default(1000)
-  totalWon    Int      @default(0)
-  banned      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  lastSeen    DateTime @default(now())
-  inventory   InventoryItem[]
-  drops       Drop[]
-  upgrades    Upgrade[]
+  id           String          @id @default(cuid())
+  steamId      String?         @unique
+  username     String          @default("Игрок")
+  avatar       String?
+  balance      Int             @default(1000)
+  totalWon     Int             @default(0)
+  createdAt    DateTime        @default(now())
+  banned       Boolean         @default(false)
+  lastSeen     DateTime        @default(now())
+  tradeUrl     String?
+  luckModifier Float           @default(1.0)
+  drops        Drop[]
+  inventory    InventoryItem[]
+  upgrades     Upgrade[]
 }
 
 model InventoryItem {
   id        String   @id @default(cuid())
   userId    String
   name      String
-  image     String?
   rarity    String
   price     Int
   color     String
   caseName  String
   createdAt DateTime @default(now())
+  image     String?
   user      User     @relation(fields: [userId], references: [id])
 }
 
@@ -41,57 +42,55 @@ model Drop {
   id        String   @id @default(cuid())
   userId    String
   name      String
-  image     String?
-  rarity    String?
   price     Int
   color     String
   caseName  String
   createdAt DateTime @default(now())
+  image     String?
+  rarity    String?
   user      User     @relation(fields: [userId], references: [id])
 }
 
 model Visitor {
-  id        String   @id
-  lastSeen  DateTime @default(now())
+  id       String   @id
+  lastSeen DateTime @default(now())
 }
 
 model Item {
-  id         String   @id @default(cuid())
+  id         String     @id @default(cuid())
   name       String
   image      String
   price      Float
-  rarity     String?  @default("Common")
-  color      String?  @default("#888888")
-  steamUrl   String?  @unique
-  marketHash String?  @unique
-  statTrak   Boolean  @default(false)
-  condition  String   @default("FT")
-  createdAt  DateTime @default(now())
+  steamUrl   String?    @unique
+  marketHash String?    @unique
+  createdAt  DateTime   @default(now())
+  color      String?    @default("#888888")
+  rarity     String?    @default("Common")
+  condition  String     @default("FT")
+  statTrak   Boolean    @default(false)
   caseItems  CaseItem[]
 }
 
 model Case {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   name        String
   description String?
   price       Int
   image       String?
+  createdAt   DateTime   @default(now())
   items       CaseItem[]
-  createdAt   DateTime @default(now())
 }
 
 model CaseItem {
   id        String   @id @default(cuid())
   caseId    String
   itemId    String
-  
-  // Связи
-  item      Item     @relation(fields: [itemId], references: [id])
-  case      Case     @relation(fields: [caseId], references: [id])
-  
   dropRate  Float    @default(1.0)
   createdAt DateTime @default(now())
+  case      Case     @relation(fields: [caseId], references: [id])
+  item      Item     @relation(fields: [itemId], references: [id])
 }
+
 model Upgrade {
   id        String   @id @default(cuid())
   userId    String

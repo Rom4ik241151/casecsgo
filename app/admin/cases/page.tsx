@@ -69,6 +69,7 @@ const [rarityFilter, setRarityFilter] = useState<string>('all')
 
   const [localImages, setLocalImages] = useState<string[]>([])
   const [imageMode, setImageMode] = useState<'url' | 'local'>('url')
+  const [rtpValue, setRtpValue] = useState(60)
 
   const fetchCases = async () => {
     const res = await fetch('/api/cases')
@@ -168,6 +169,46 @@ const [rarityFilter, setRarityFilter] = useState<string>('all')
     setDeleteConfirm(null)
     fetchCases()
   }
+  const autoFillCase = () => {
+  if (!price || allItems.length === 0) return
+
+  const validItems = allItems.filter(i => i.price > 0)
+
+const ranges = [
+  { min: 0, max: price * 0.3, count: 3 },
+  { min: price * 0.3, max: price * 0.8, count: 3 },
+  { min: price * 0.8, max: price * 1.5, count: 2 },
+  { min: price * 1.5, max: price * 4, count: 1 },
+  { min: price * 4, max: price * 50, count: 1 },
+]
+
+const picked: Item[] = []
+for (const r of ranges) {
+  const candidates = validItems.filter(i => i.price >= r.min && i.price < r.max && !picked.find(p => p.id === i.id))
+  const shuffled = [...candidates].sort(() => Math.random() - 0.5)
+  picked.push(...shuffled.slice(0, r.count))
+}
+
+  if (picked.length === 0) return
+
+  const sumInv = picked.reduce((s, i) => s + 1 / i.price, 0)
+  const d1 = picked.map(i => (1 / i.price) / sumInv * 100)
+
+  const sumPrice = picked.reduce((s, i) => s + i.price, 0)
+  const d2 = picked.map(i => i.price / sumPrice * 100)
+
+  const e1 = picked.reduce((s, i, idx) => s + (d1[idx] / 100) * i.price, 0)
+  const e2 = picked.reduce((s, i, idx) => s + (d2[idx] / 100) * i.price, 0)
+
+  const target = price * (rtpValue / 100)
+  let t = e2 !== e1 ? (e2 - target) / (e2 - e1) : 0.5
+  t = Math.max(0, Math.min(1, t))
+
+  setSelectedItems(picked.map((item, idx) => ({
+    itemId: item.id,
+    dropRate: parseFloat((t * d1[idx] + (1 - t) * d2[idx]).toFixed(2)),
+  })))
+}
 
   const filteredItems = allItems
   .filter(i => i.name.toLowerCase().includes(itemSearch.toLowerCase()))
@@ -289,6 +330,22 @@ const [rarityFilter, setRarityFilter] = useState<string>('all')
                   style={inputStyle}
                 />
               </div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>РТП %:</span>
+              <input
+                type="number" min={10} max={95} value={rtpValue}
+                onChange={e => setRtpValue(parseFloat(e.target.value) || 60)}
+                style={{ width: 56, padding: '4px 6px', fontSize: 12, borderRadius: 6, border: '0.5px solid var(--color-border-tertiary)', background: 'var(--color-background-secondary)', color: 'var(--color-text-primary)', textAlign: 'center' }}
+              />
+              <button
+                onClick={autoFillCase}
+                disabled={!price}
+                style={{ fontSize: 13, padding: '6px 14px', borderRadius: 8, cursor: price ? 'pointer' : 'not-allowed', background: 'rgba(75,105,255,0.15)', border: '0.5px solid #4b69ff66', color: '#4b69ff', opacity: price ? 1 : 0.5 }}
+              >🪄 Авто-наполнение</button>
+              <span style={{ fontSize: 12, color: 'var(--color-text-tertiary)' }}>
+                Подберёт предметы из базы и выставит шансы так, чтобы средняя выдача была ≈{rtpValue}% от цены кейса
+              </span>
+            </div>
 
               {/* Картинка кейса — URL или из папки */}
               <div>
@@ -455,6 +512,7 @@ const [rarityFilter, setRarityFilter] = useState<string>('all')
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
   <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-secondary)' }}>Добавить предметы из базы:</p>
   {selectedItems.length > 1 && (
+  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
     <button
       onClick={() => {
         const equal = parseFloat((100 / selectedItems.length).toFixed(1))
@@ -466,7 +524,61 @@ const [rarityFilter, setRarityFilter] = useState<string>('all')
         color: '#4b69ff'
       }}
     >⚖️ Поровну</button>
-  )}
+
+    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+      <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>РТП %:</span>
+      <input
+        type="number"
+        min={10}
+        max={95}
+        value={rtpValue}
+onChange={e => setRtpValue(parseFloat(e.target.value) || 60)}
+        style={{
+          width: 56, padding: '3px 6px', fontSize: 12,
+          borderRadius: 6, border: '0.5px solid var(--color-border-tertiary)',
+          background: 'var(--color-background-primary)',
+          color: 'var(--color-text-primary)', textAlign: 'center'
+        }}
+      />
+      <button
+        onClick={() => {
+          if (!price || selectedItems.length === 0) return
+          const items = selectedItems
+            .map(si => ({ si, item: allItems.find(i => i.id === si.itemId) }))
+            .filter(x => x.item && x.item.price > 0) as { si: typeof selectedItems[0]; item: Item }[]
+
+          const n = items.length
+          if (n === 0) return
+
+          const sumInv = items.reduce((s, x) => s + 1 / x.item.price, 0)
+          const d1 = items.map(x => (1 / x.item.price) / sumInv * 100)
+
+          const sumPrice = items.reduce((s, x) => s + x.item.price, 0)
+          const d2 = items.map(x => x.item.price / sumPrice * 100)
+
+          const e1 = items.reduce((s, x, i) => s + (d1[i] / 100) * x.item.price, 0)
+          const e2 = items.reduce((s, x, i) => s + (d2[i] / 100) * x.item.price, 0)
+
+          const target = price * (rtpValue / 100)
+          let t = e2 !== e1 ? (e2 - target) / (e2 - e1) : 0.5
+          t = Math.max(0, Math.min(1, t))
+
+          const newItems = items.map((x, i) => ({
+            itemId: x.si.itemId,
+            dropRate: parseFloat((t * d1[i] + (1 - t) * d2[i]).toFixed(2)),
+          }))
+
+          setSelectedItems(newItems)
+        }}
+        style={{
+          fontSize: 12, padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
+          background: 'rgba(233,69,96,0.15)', border: '0.5px solid #e9456066',
+          color: '#e94560'
+        }}
+      >🎯 Авто-РТП</button>
+    </div>
+  </div>
+)}
 </div>
 
 <input

@@ -10,13 +10,32 @@ export default function PlayersPage() {
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<'balance' | 'username'>('balance')
   const [copied, setCopied] = useState('')
+  const [luckValues, setLuckValues] = useState<Record<string, number>>({})
+  const [luckSaved, setLuckSaved] = useState<Record<string, boolean>>({})
+
+  
+
+  const saveLuck = async (steamId: string, value: number) => {
+    await fetch('/api/admin/players/luck', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ steamId, luckModifier: value }),
+    })
+    setLuckSaved(prev => ({ ...prev, [steamId]: true }))
+    setTimeout(() => setLuckSaved(prev => ({ ...prev, [steamId]: false })), 1500)
+  }
 
   const fetchPlayers = async () => {
     setLoading(true)
     const res = await fetch('/api/admin/players')
     const text = await res.text()
     const data = text ? JSON.parse(text) : []
-    if (Array.isArray(data)) setPlayers(data)
+    if (Array.isArray(data)) {
+      setPlayers(data)
+      const init: Record<string, number> = {}
+      data.forEach((p: any) => { init[p.steamId] = p.luckModifier ?? 1.0 })
+      setLuckValues(init)
+    }
     setLoading(false)
   }
 
@@ -128,6 +147,29 @@ export default function PlayersPage() {
                 ) : (
                   <p style={{ color: '#444', fontSize: 12, margin: 0 }}>trade не указана</p>
                 )}
+              </div>
+              <div style={{ minWidth: 180 }}>
+                <p style={{ color: '#666', fontSize: 11, margin: '0 0 4px' }}>
+                  Шанс x{(luckValues[player.steamId] ?? 1.0).toFixed(2)}
+                  {luckSaved[player.steamId] && <span style={{ color: '#4caf50', marginLeft: 6 }}>✓</span>}
+                </p>
+                <input
+                  type="range"
+                  min={0.3}
+                  max={2.5}
+                  step={0.05}
+                  value={luckValues[player.steamId] ?? 1.0}
+                  onChange={e => setLuckValues(prev => ({ ...prev, [player.steamId]: parseFloat(e.target.value) }))}
+                  onMouseUp={e => saveLuck(player.steamId, parseFloat((e.target as HTMLInputElement).value))}
+                  onTouchEnd={e => saveLuck(player.steamId, parseFloat((e.target as HTMLInputElement).value))}
+                  style={{ width: '100%' }}
+                />
+                <button
+                  onClick={() => saveLuck(player.steamId, luckValues[player.steamId] ?? 1.0)}
+                  style={{ marginTop: 4, padding: '2px 10px', background: '#1e2a4a', color: '#aaa', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 11, width: '100%' }}
+                >
+                  {luckSaved[player.steamId] ? '✓ Сохранено' : 'Сохранить'}
+                </button>
               </div>
 
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>

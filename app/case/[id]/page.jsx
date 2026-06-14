@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useStore } from '../../store'
 
+
 const FALLBACK_IMAGE = 'https://community.cloudflare.steamstatic.com/public/images/skin_illustrations/econ/default_generated_item.png'
 
 const RARITY_COLORS = {
@@ -55,15 +56,27 @@ function playSound(type, muted, activeAudios) {
   }
 }
 
-function getRandomItem(items) {
-  const total = items.reduce((sum, i) => sum + (i.chance ?? 1), 0)
+function getRandomItem(items, luckMod = 1.0) {
+  // Применяем модификатор: дорогие предметы (низкий chance) получают буст
+  // Чем выше luckMod > 1, тем больше шанс выпадения редких предметов
+  const avgChance = items.reduce((s, i) => s + (i.chance ?? 1), 0) / items.length
+  const weighted = items.map(i => {
+    const base = i.chance ?? 1
+    // Редкие предметы (chance ниже среднего) усиливаются при luckMod > 1
+    const isRare = base < avgChance
+    const adjusted = isRare
+      ? base * luckMod
+      : base / Math.max(0.5, luckMod)
+    return { ...i, _w: Math.max(0.01, adjusted) }
+  })
+  const total = weighted.reduce((sum, i) => sum + i._w, 0)
   const rand = Math.random() * total
   let cumulative = 0
-  for (const item of items) {
-    cumulative += (item.chance ?? 1)
+  for (const item of weighted) {
+    cumulative += item._w
     if (rand <= cumulative) return item
   }
-  return items[0]
+  return weighted[0]
 }
 
 const ITEM_GAP = 8
@@ -80,8 +93,8 @@ function generateStrip(items, winner) {
 
 function Roulette({ items, winner, spinning, fastMode, done, count, caseColor }) {
   const SPIN_DURATION = fastMode ? 1500 : 6000
-  const height = count === 1 ? 180 : count <= 3 ? 130 : 90
-  const itemW = count === 1 ? 160 : count <= 3 ? 120 : 85
+  const height = count === 1 ? 220 : count <= 3 ? 160 : 110
+const itemW = count === 1 ? 200 : count <= 3 ? 150 : 100
   const fontSize = count === 1 ? 36 : count <= 3 ? 28 : 20
   const textSize = count === 1 ? 11 : count <= 3 ? 10 : 9
   const itemH = height - 30
@@ -172,7 +185,7 @@ function Roulette({ items, winner, spinning, fastMode, done, count, caseColor })
               padding: '6px', transition: 'all 0.3s ease'
             }}>
               <img src={item.image || FALLBACK_IMAGE} alt={item.name}
-                style={{ width: '80%', height: `${fontSize * 1.4}px`, objectFit: 'contain', marginBottom: '4px' }} />
+  style={{ width: '90%', height: `${itemH * 0.65}px`, objectFit: 'contain', marginBottom: '4px' }} />
               <p style={{ fontSize: `${textSize}px`, textAlign: 'center', color, fontWeight: 'bold', lineHeight: 1.2, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{item.name}</p>
             </div>
           )
@@ -204,7 +217,19 @@ export default function CasePage() {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
-  const { balance, addBalance, addDrop, addToInventory, sellItem } = useStore()
+  const { balance, addBalance, addDrop, addToInventory, sellItem, steamUser } = useStore()
+  const { setSteamUser } = useStore()
+
+useEffect(() => {
+  const cookies = document.cookie.split(';')
+  const steamCookie = cookies.find(c => c.trim().startsWith('steam_user='))
+  if (steamCookie) {
+    try {
+      const user = JSON.parse(decodeURIComponent(steamCookie.split('=')[1]))
+      setSteamUser(user)
+    } catch {}
+  }
+}, [])
   const [spinning, setSpinning] = useState(false)
   const [fastMode, setFastMode] = useState(false)
   const [multiCount, setMultiCount] = useState(1)
@@ -213,6 +238,13 @@ export default function CasePage() {
   const [done, setDone] = useState(false)
   const [activeCount, setActiveCount] = useState(1)
   const [muted, setMuted] = useState(false)
+  const [luckModifier, setLuckModifier] = useState(1.0)
+
+  useEffect(() => {
+    fetch('/api/user/luck').then(r => r.json()).then(d => {
+      if (typeof d?.luckModifier === 'number') setLuckModifier(d.luckModifier)
+    }).catch(() => {})
+  }, [])
 
   // Реф для доступа к актуальным значениям в cleanup
   const pendingRef = useRef({ results: [], caseData: null })
@@ -286,7 +318,7 @@ useEffect(() => {
       alert('Недостаточно средств!')
       return
     }
-    const wonItems = Array.from({ length: multiCount }, () => getRandomItem(items))
+    const wonItems = Array.from({ length: multiCount }, () => getRandomItem(items, luckModifier))
     addBalance(-totalCost)
     setResults([])
     setDone(false)
@@ -347,7 +379,20 @@ else if (hasRare) playSound('win', muted, activeAudiosRef.current)
   }
 
   return (
-    <main style={{ minHeight: '100vh', background: '#1a1a2e' }}>
+    <main style={{ minHeight: '100vh', background: '#0a0a14' }}>
+  {/* Фон */}
+  <div style={{
+    position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+    backgroundImage: 'url(/upgrade-bg.png)',
+    backgroundSize: 'cover', backgroundPosition: 'center',
+    opacity: 0.15,
+  }} />
+  <div style={{
+    position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+    background: 'radial-gradient(ellipse at 20% 50%, rgba(232,75,106,0.12) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(136,71,255,0.1) 0%, transparent 50%)',
+  }} />
+      <div className="bg-orb" style={{ width: '600px', height: '600px', background: 'rgba(233,69,96,0.08)', top: '-200px', left: '-200px' }} />
+      <div className="bg-orb" style={{ width: '500px', height: '500px', background: 'rgba(100,50,200,0.08)', bottom: '-100px', right: '-100px', animationDelay: '3s' }} />
       <style jsx global>{`
         @keyframes fastShimmer {
           0% { background-position: 0% 50%; }
@@ -379,73 +424,133 @@ else if (hasRare) playSound('win', muted, activeAudiosRef.current)
           box-shadow: 0 8px 30px rgba(233,69,96,0.6) !important;
         }
         .item-card:hover { transform: translateY(-3px); }
+        @keyframes winAppear {
+  0% { transform: scale(0.5) translateY(30px); opacity: 0; }
+  70% { transform: scale(1.05) translateY(-5px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+.win-card { animation: winAppear 0.5s ease forwards; }
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+.bg-orb {
+  position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+  filter: blur(80px); animation: pulse 6s ease-in-out infinite;
+}
+  .nav-item { position: relative; transition: all 0.3s ease; }
+.nav-item::after {
+  content: '';
+  position: absolute;
+  bottom: -6px; left: 0;
+  width: 0%; height: 2px;
+  background: linear-gradient(90deg, #e94560, #ff6b6b);
+  transition: width 0.3s ease;
+  border-radius: 2px;
+}
+.nav-item:hover::after { width: 100%; }
       `}</style>
 
-      {/* Навбар */}
       <nav style={{
-        background: 'rgba(22, 33, 62, 0.95)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(233,69,96,0.3)', padding: '0 30px',
-        height: '80px', display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100
-      }}>
-        <div onClick={() => router.push('/')} style={{ cursor: 'pointer', fontSize: '44px', fontWeight: '800', letterSpacing: '-1px', padding: '8px 0' }} className="logo-glow">
-          OtakuCase
-        </div>
-        <div style={{ display: 'flex', gap: '40px' }}>
-          {[['/', 'Кейсы'], ['/upgrade', 'Апгрейд'], ['/roulette', 'Рулетка'], ['/contracts', 'Контракты']].map(([href, label]) => (
-            <span key={href} onClick={() => router.push(href)} style={{ color: '#aaa', cursor: 'pointer', fontSize: '15px', fontWeight: '500' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#e94560'}
-              onMouseLeave={e => e.currentTarget.style.color = '#aaa'}
-            >{label}</span>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-          <div style={{ background: 'rgba(233,69,96,0.12)', padding: '10px 24px', borderRadius: '50px', border: '1px solid rgba(233,69,96,0.4)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '20px' }}>💰</span>
-            <span style={{ color: '#e94560', fontWeight: 'bold', fontSize: '20px', fontFamily: 'monospace' }}>
-              {balance.toFixed(2)} ₽
-            </span>
-          </div>
-          <button
-  onClick={() => setMuted(m => !m)}
-  title={muted ? 'Включить звук' : 'Выключить звук'}
-  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.borderColor = muted ? 'rgba(233,69,96,0.7)' : 'rgba(255,255,255,0.3)' }}
-  onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = muted ? 'rgba(233,69,96,0.35)' : 'rgba(255,255,255,0.12)' }}
-  style={{
-    width: '44px', height: '44px', borderRadius: '50%', cursor: 'pointer',
-    fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    transition: 'all 0.2s ease', position: 'relative', flexShrink: 0,
-    background: muted ? 'rgba(233,69,96,0.12)' : 'rgba(255,255,255,0.06)',
-    border: muted ? '1px solid rgba(233,69,96,0.35)' : '1px solid rgba(255,255,255,0.12)',
-    color: muted ? '#e94560' : '#ccc',
-    animation: muted ? 'none' : 'none',
-  }}
->
-  {muted ? '🔇' : '🔊'}
-  {muted && (
-    <span style={{
-      position: 'absolute', top: '50%', left: '50%',
-      transform: 'translate(-50%, -50%) rotate(-45deg)',
-      width: '26px', height: '2px',
-      background: '#e94560', borderRadius: '2px', pointerEvents: 'none',
-    }} />
-  )}
-</button>
-          <button onClick={() => router.push('/profile')} style={{ background: 'linear-gradient(135deg, #e94560, #c73550)', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '50px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>
-            👤 Профиль
-          </button>
-        </div>
-      </nav>
+  background: 'rgba(8, 8, 20, 0.98)',
+  backdropFilter: 'blur(10px)',
+  borderBottom: '1px solid rgba(233,69,96,0.3)',
+  padding: '0 30px',
+  height: '80px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  position: 'sticky',
+  top: 0,
+  zIndex: 100
+}}>
+  <div onClick={() => router.push('/')} style={{ cursor: 'pointer', fontSize: '44px', fontWeight: '800', letterSpacing: '-1px', padding: '8px 0' }} className="logo-glow">
+    OtakuCase
+  </div>
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 30px' }}>
+  <div style={{ display: 'flex', gap: '40px' }}>
+    {[['/', 'Кейсы'], ['/upgrade', 'Апгрейд'], ['/contracts', 'Контракты']].map(([href, label]) => (
+      <span key={href} onClick={() => router.push(href)} className="nav-item"
+        style={{ color: '#aaa', cursor: 'pointer', fontSize: '15px', fontWeight: '500', padding: '6px 0' }}
+        onMouseEnter={e => e.currentTarget.style.color = '#e94560'}
+        onMouseLeave={e => e.currentTarget.style.color = '#aaa'}
+      >{label}</span>
+    ))}
+  </div>
+
+  <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+    <div style={{
+      background: 'rgba(233,69,96,0.12)', padding: '10px 24px',
+      borderRadius: '50px', border: '1px solid rgba(233,69,96,0.4)',
+      display: 'flex', alignItems: 'center', gap: '10px'
+    }}>
+      <span style={{ fontSize: '20px' }}>💰</span>
+      <span style={{ color: '#e94560', fontWeight: 'bold', fontSize: '20px', fontFamily: 'monospace' }}>
+        {balance.toFixed(2)} ₽
+      </span>
+    </div>
+    <button
+      onClick={() => setMuted(m => !m)}
+      title={muted ? 'Включить звук' : 'Выключить звук'}
+      style={{
+        width: '40px', height: '40px', borderRadius: '12px', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: muted ? 'rgba(233,69,96,0.15)' : 'rgba(255,255,255,0.05)',
+        border: muted ? '1px solid rgba(233,69,96,0.5)' : '1px solid rgba(255,255,255,0.1)',
+        transition: 'all 0.2s ease',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)' }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        {muted ? (
+          <>
+            <path d="M11 5L6 9H2v6h4l5 4V5z" fill="#e94560"/>
+            <line x1="23" y1="9" x2="17" y2="15" stroke="#e94560" strokeWidth="2" strokeLinecap="round"/>
+            <line x1="17" y1="9" x2="23" y2="15" stroke="#e94560" strokeWidth="2" strokeLinecap="round"/>
+          </>
+        ) : (
+          <>
+            <path d="M11 5L6 9H2v6h4l5 4V5z" fill="#aaa"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="#aaa" strokeWidth="2" strokeLinecap="round"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14" stroke="#aaa" strokeWidth="2" strokeLinecap="round"/>
+          </>
+        )}
+      </svg>
+    </button>
+    {steamUser ? (
+      <div onClick={() => router.push('/profile')} style={{
+        display: 'flex', alignItems: 'center', gap: '10px',
+        background: 'rgba(233,69,96,0.08)',
+        border: '1px solid rgba(233,69,96,0.3)',
+        padding: '6px 14px 6px 6px', borderRadius: '50px',
+        cursor: 'pointer', transition: 'all 0.3s ease',
+      }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(233,69,96,0.2)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(233,69,96,0.08)'; e.currentTarget.style.transform = 'translateY(0)' }}
+      >
+        <img src={steamUser.avatar} width={32} height={32} style={{ borderRadius: '50%', border: '2px solid #e94560' }} />
+<span style={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}>{steamUser.name}</span>
+      </div>
+    ) : (
+      <button onClick={() => router.push('/profile')} style={{
+        background: 'linear-gradient(135deg, #e94560, #c73550)',
+        color: 'white', border: 'none', padding: '10px 24px',
+        borderRadius: '50px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px'
+      }}>👤 Профиль</button>
+    )}
+  </div>
+</nav>
+
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 30px', position: 'relative', zIndex: 2 }}>
         <button onClick={() => router.push('/')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#aaa', padding: '8px 20px', borderRadius: '30px', cursor: 'pointer', marginBottom: '30px', fontSize: '13px' }}
           onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)' }}
           onMouseLeave={e => { e.currentTarget.style.color = '#aaa'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
         >← Назад</button>
 
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <img src={caseData.image || FALLBACK_IMAGE} alt={caseData.name} className="case-float" style={{ width: '150px', height: '150px', objectFit: 'contain', filter: `drop-shadow(0 0 40px ${caseColor}) drop-shadow(0 0 80px ${caseColor}50)`, marginBottom: '20px' }} />
-          <h1 style={{ fontSize: '36px', fontWeight: '800', marginBottom: '8px', background: `linear-gradient(135deg, #fff, ${caseColor})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{caseData.name}</h1>
+  <img src={caseData.image || FALLBACK_IMAGE} alt={caseData.name} className="case-float" style={{ width: '220px', height: '220px', objectFit: 'contain', filter: `drop-shadow(0 0 60px ${caseColor}) drop-shadow(0 0 120px ${caseColor}60) drop-shadow(0 0 200px ${caseColor}30)`, marginBottom: '20px' }} />
+  <h1 style={{ fontSize: '36px', fontWeight: '800', marginBottom: '8px', background: `linear-gradient(135deg, #fff, ${caseColor})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{caseData.name}</h1>
           <p style={{ color: '#888', fontSize: '15px' }}>Цена открытия: <span style={{ color: caseColor, fontWeight: 'bold' }}>{caseData.price} ₽</span></p>
         </div>
 
@@ -458,148 +563,185 @@ else if (hasRare) playSound('win', muted, activeAudiosRef.current)
             <div style={{
               display: 'grid',
               gridTemplateColumns: activeCount <= 3 ? `repeat(${activeCount}, 1fr)` : activeCount <= 6 ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)',
-              gap: '8px', marginBottom: '25px'
+              gap: '24px', marginBottom: '25px'
             }}>
               {Array.from({ length: activeCount }).map((_, i) => (
-                <div key={i} style={{ minWidth: 0 }}>
-                  <Roulette items={items} winner={winners[i] || null} spinning={spinning} fastMode={fastMode} done={done} count={activeCount <= 3 ? activeCount : activeCount <= 6 ? 3 : 5} caseColor={caseColor} />
+  <div key={i} style={{ minWidth: 0, position: 'relative' }}>
+    <img src="/corner-pink.png" style={{ position: 'absolute', top: -20, left: -20, width: '60px', opacity: 0.7, pointerEvents: 'none', zIndex: 10 }} alt="" />
+    <img src="/corner-pink.png" style={{ position: 'absolute', top: -20, right: -20, width: '60px', opacity: 0.7, pointerEvents: 'none', transform: 'scaleX(-1)', zIndex: 10 }} alt="" />
+    <img src="/corner-pink.png" style={{ position: 'absolute', bottom: -8, left: -20, width: '60px', opacity: 0.7, pointerEvents: 'none', transform: 'scaleY(-1)', zIndex: 10 }} alt="" />
+    <img src="/corner-pink.png" style={{ position: 'absolute', bottom: -8, right: -20, width: '60px', opacity: 0.7, pointerEvents: 'none', transform: 'scale(-1)', zIndex: 10 }} alt="" />
+    <Roulette items={items} winner={winners[i] || null} spinning={spinning} fastMode={fastMode} done={done} count={activeCount <= 3 ? activeCount : activeCount <= 6 ? 3 : 5} caseColor={caseColor} />
                 </div>
               ))}
             </div>
-<div style={{
-  background: 'rgba(22,33,62,0.6)',
-  border: '1px solid rgba(233,69,96,0.15)',
-  borderRadius: '20px',
-  padding: '24px',
-  marginBottom: '30px',
-}}></div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '15px' }}>
-              {[['Обычный', false], ['Быстрый', true]].map(([label, fast]) => (
-                <button key={label} onClick={() => setFastMode(fast)} style={{
-                  padding: '8px 28px', borderRadius: '30px', border: 'none', cursor: 'pointer', fontWeight: 'bold',
-                  background: fastMode === fast ? 'linear-gradient(135deg, #e94560, #c73550)' : 'rgba(255,255,255,0.05)',
-                  color: fastMode === fast ? 'white' : '#aaa',
-                  border: fastMode === fast ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                }}>{label}</button>
-              ))}
-            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '25px' }}>
-              {[1, 2, 3, 5, 10].map(n => (
-                <button key={n} onClick={() => setMultiCount(n)} disabled={n > maxCount} style={{
-                  padding: '6px 18px', borderRadius: '30px', border: 'none',
-                  cursor: n > maxCount ? 'not-allowed' : 'pointer', fontWeight: 'bold',
-                  background: multiCount === n ? `linear-gradient(135deg, ${caseColor}, ${caseColor}aa)` : 'rgba(255,255,255,0.05)',
-                  color: n > maxCount ? '#555' : multiCount === n ? 'white' : '#aaa',
-                  border: multiCount === n ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                }}>x{n}</button>
-              ))}
-            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '15px' }}>
+  {[['Обычный', false], ['Быстрый', true]].map(([label, fast]) => (
+    <button key={label} onClick={() => setFastMode(fast)} style={{
+      padding: '10px 32px', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px',
+      background: fastMode === fast
+        ? 'linear-gradient(135deg, #e94560, #c73550)'
+        : 'linear-gradient(135deg, rgba(22,33,62,0.9), rgba(26,26,46,0.9))',
+      color: fastMode === fast ? 'white' : '#666',
+      border: fastMode === fast ? 'none' : '1px solid rgba(136,71,255,0.25)',
+      boxShadow: fastMode === fast ? '0 4px 20px rgba(233,69,96,0.5)' : 'none',
+      transition: 'all 0.2s'
+    }}>{label}</button>
+  ))}
+</div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '25px' }}>
+  {[1, 2, 3, 5, 10].map(n => (
+    <button key={n} onClick={() => setMultiCount(n)} disabled={n > maxCount} style={{
+      padding: '10px 24px', borderRadius: '12px',
+      cursor: n > maxCount ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '15px',
+      background: multiCount === n
+        ? `linear-gradient(135deg, ${caseColor}, #c73550)`
+        : 'linear-gradient(135deg, rgba(22,33,62,0.9), rgba(26,26,46,0.9))',
+      color: n > maxCount ? '#333' : multiCount === n ? 'white' : '#666',
+      border: multiCount === n ? 'none' : '1px solid rgba(136,71,255,0.25)',
+      boxShadow: multiCount === n ? `0 4px 20px ${caseColor}66` : 'none',
+      transition: 'all 0.2s'
+    }}>x{n}</button>
+  ))}
+</div>
 
             <div style={{ textAlign: 'center', marginBottom: '35px' }}>
-              <button className="spin-btn" onClick={spin} disabled={spinning} style={{
-                background: spinning ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #e94560, #c73550)',
-                color: spinning ? '#666' : 'white', border: 'none', padding: '16px 70px',
-                fontSize: '18px', fontWeight: 'bold', borderRadius: '50px',
-                cursor: spinning ? 'not-allowed' : 'pointer',
-                boxShadow: spinning ? 'none' : '0 4px 20px rgba(233,69,96,0.4)'
-              }}>
-                {spinning ? '⌛ Открываем...' : `🎁 Открыть${multiCount > 1 ? ' ' + multiCount + 'x' : ''} · ${(caseData.price * multiCount).toLocaleString()} ₽`}
-              </button>
-            </div>
+  {results.length > 0 ? (
+    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+      <button onClick={() => {
+        const total = roundTo10(results.reduce((sum, i) => sum + (Number(getPrice(i)) || 0), 0))
+        addBalance(total)
+        setResults([])
+      }} style={{
+        background: 'linear-gradient(135deg, #e94560, #c73550)',
+        color: 'white', border: 'none', padding: '18px 48px',
+        borderRadius: '16px', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold',
+        boxShadow: '0 6px 30px rgba(233,69,96,0.6)'
+      }}>Продать{results.length > 1 ? ' всё' : ''} · {roundTo10(results.reduce((sum, i) => sum + (Number(getPrice(i)) || 0), 0))} ₽</button>
+      <button onClick={() => {
+        results.forEach(item => addToInventory(item, caseData.name))
+        setResults([])
+      }} style={{
+        background: 'linear-gradient(135deg, rgba(22,33,62,0.9), rgba(26,26,46,0.9))',
+        color: '#aaa', border: '1px solid rgba(136,71,255,0.25)',
+        padding: '18px 48px', borderRadius: '16px',
+        cursor: 'pointer', fontSize: '18px', fontWeight: 'bold'
+      }}>Оставить{results.length > 1 ? ' всё' : ''}</button>
+    </div>
+  ) : (
+    <button className="spin-btn" onClick={spin} disabled={spinning} style={{
+      background: spinning ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #e94560, #c73550, #e94560)',
+      backgroundSize: '200% auto',
+      animation: spinning ? 'none' : 'fastShimmer 3s ease infinite',
+      color: spinning ? '#555' : 'white', border: 'none', padding: '18px 80px',
+      fontSize: '20px', fontWeight: '800', borderRadius: '16px', letterSpacing: '1px',
+      cursor: spinning ? 'not-allowed' : 'pointer',
+      boxShadow: spinning ? 'none' : '0 6px 30px rgba(233,69,96,0.6)',
+      transition: 'all 0.3s'
+    }}>
+      {spinning ? 'Открываем...' : `Открыть${multiCount > 1 ? ' ' + multiCount + 'x' : ''} · ${(caseData.price * multiCount).toLocaleString()} ₽`}
+    </button>
+  )}
+</div>
 
             {/* Результаты */}
             {results.length > 0 && (
               <div style={{ marginBottom: '50px' }}>
                 <h3 style={{ textAlign: 'center', marginBottom: '20px', color: '#aaa', fontSize: '18px' }}>
-                  {results.length > 1 ? '🎁 Ваши выигрыши:' : '🎉 Вы выиграли!'}
+                  {results.length > 1 ? 'Ваши выигрыши:' : 'Вы выиграли!'}
                 </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '15px', maxWidth: '900px', margin: '0 auto' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: results.length === 1 ? '1fr' : 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px', maxWidth: results.length === 1 ? '480px' : '900px', margin: '0 auto' }}>
                   {results.map((item, i) => {
                     const color = getColor(item)
                     return (
-                      <div key={i} className="item-card" style={{
-                        textAlign: 'center',
-                        background: `linear-gradient(135deg, rgba(22,33,62,0.9), ${color}20)`,
-                        border: `1px solid ${color}60`, borderRadius: '16px', padding: '20px',
-                        boxShadow: `0 4px 20px ${color}30`
-                      }}>
-                        <img src={item.image || FALLBACK_IMAGE} alt={item.name} style={{ width: '100%', height: '60px', objectFit: 'contain', marginBottom: '8px' }} />
-                        <h3 style={{ color, fontSize: '12px', marginBottom: '6px', fontWeight: 'bold' }}>{item.name}</h3>
-                        <p style={{ color: '#e94560', fontSize: '18px', fontWeight: 'bold' }}>{getPrice(item)} ₽</p>
-                        <p style={{ color: '#666', fontSize: '11px', marginTop: '4px' }}>{item.rarity}</p>
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
-                          <button onClick={() => {
-                            // ✅ продаём по актуальной цене (steam или базовой)
-                            const price = roundTo10(getPrice(item))
-addBalance(price)
-                            setResults(prev => prev.filter((_, idx) => idx !== i))
-                          }} style={{
-                            flex: 1, background: 'linear-gradient(135deg, #e94560, #c73550)',
-                            color: 'white', border: 'none', padding: '8px',
-                            borderRadius: '20px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold'
-                          }}>Продать</button>
-                          <button onClick={() => {
-                            addToInventory(item, caseData.name)
-                            setResults(prev => prev.filter((_, idx) => idx !== i))
-                          }} style={{
-                            flex: 1, background: 'rgba(255,255,255,0.05)',
-                            color: '#aaa', border: '1px solid rgba(255,255,255,0.1)',
-                            padding: '8px', borderRadius: '20px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold'
-                          }}>Оставить</button>
-                        </div>
+                      <div key={i} className="item-card win-card" style={{
+  textAlign: 'center',
+  background: `linear-gradient(135deg, rgba(15,20,40,0.95), ${color}25)`,
+  border: `2px solid ${color}80`, borderRadius: '20px', padding: '24px',
+  boxShadow: `0 8px 40px ${color}40, 0 0 80px ${color}15`,
+  position: 'relative', overflow: 'hidden'
+}}>
+  <div style={{
+    position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
+    background: `linear-gradient(90deg, transparent, ${color}, transparent)`
+  }} />
+  <div style={{
+    background: `radial-gradient(circle, ${color}20 0%, transparent 70%)`,
+    borderRadius: '12px', padding: '16px', marginBottom: '12px'
+  }}>
+    <img src={item.image || FALLBACK_IMAGE} alt={item.name} style={{ width: '100%', height: '130px', objectFit: 'contain' }} />
+  </div>
+  <div style={{ background: `${color}20`, borderRadius: '6px', padding: '3px 10px', display: 'inline-block', marginBottom: '8px' }}>
+    <span style={{ color, fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>{item.rarity}</span>
+  </div>
+  <h3 style={{ color: '#fff', fontSize: '13px', marginBottom: '8px', fontWeight: 'bold', lineHeight: 1.3 }}>{item.name}</h3>
+  <p style={{ color, fontSize: '22px', fontWeight: '800', marginBottom: '4px', fontFamily: 'monospace' }}>{getPrice(item)} ₽</p>
+                        
+                        {results.length > 1 && (
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+                            <button onClick={() => {
+                              const price = roundTo10(getPrice(item))
+                              addBalance(price)
+                              setResults(prev => prev.filter((_, idx) => idx !== i))
+                            }} style={{
+                              flex: 1, background: 'linear-gradient(135deg, #e94560, #c73550)',
+                              color: 'white', border: 'none', padding: '8px',
+                              borderRadius: '20px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold'
+                            }}>Продать</button>
+                            <button onClick={() => {
+                              addToInventory(item, caseData.name)
+                              setResults(prev => prev.filter((_, idx) => idx !== i))
+                            }} style={{
+                              flex: 1, background: 'rgba(255,255,255,0.05)',
+                              color: '#aaa', border: '1px solid rgba(255,255,255,0.1)',
+                              padding: '8px', borderRadius: '20px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold'
+                            }}>Оставить</button>
+                          </div>
+                        )}
                       </div>
                     )
                   })}
                 </div>
-                {results.length > 1 && (
-  <>
-    <p style={{ textAlign: 'center', marginTop: '20px', color: '#e94560', fontSize: '20px', fontWeight: 'bold' }}>
-      💰 Итого: {roundTo10(results.reduce((sum, i) => sum + (Number(getPrice(i)) || 0), 0))} ₽
-    </p>
-    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '16px' }}>
-      <button onClick={() => {
-        const total = roundTo10(results.reduce((sum, i) => sum + (Number(getPrice(i)) || 0), 0))
-addBalance(total)
-        addBalance(total)
-        setResults([])
-      }} style={{
-        background: 'linear-gradient(135deg, #e94560, #c73550)',
-        color: 'white', border: 'none', padding: '12px 32px',
-        borderRadius: '30px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold'
-      }}>Продать всё</button>
-      <button onClick={() => {
-        results.forEach(item => addToInventory(item, caseData.name))
-        setResults([])
-      }} style={{
-        background: 'rgba(255,255,255,0.05)',
-        color: '#aaa', border: '1px solid rgba(255,255,255,0.1)',
-        padding: '12px 32px', borderRadius: '30px',
-        cursor: 'pointer', fontSize: '14px', fontWeight: 'bold'
-      }}>Оставить всё</button>
-    </div>
-  </>
-)}
-              </div>
+                </div>
             )}
 
-            <h2 style={{ textAlign: 'center', marginBottom: '25px', fontSize: '20px', color: '#888', letterSpacing: '2px', textTransform: 'uppercase', fontWeight: '600' }}>
-  <span style={{ borderBottom: '2px solid rgba(233,69,96,0.4)', paddingBottom: '8px' }}>Содержимое кейса</span>
-</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', marginBottom: '60px' }}>
-              {items.map(item => {
+            <div style={{ textAlign: 'center', marginBottom: '30px', marginTop: '20px' }}>
+  <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#fff', letterSpacing: '3px', textTransform: 'uppercase', display: 'inline-block', position: 'relative' }}>
+    <span style={{ background: 'linear-gradient(135deg, #fff, #e94560)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Содержимое кейса</span>
+  </h2>
+  <div style={{ height: '2px', background: 'linear-gradient(90deg, transparent, #e94560, transparent)', marginTop: '10px' }} />
+</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '16px', marginBottom: '60px' }}>
+              {[...items].sort((a, b) => getPrice(b) - getPrice(a)).map(item => {
                 const color = getColor(item)
                 return (
                   <div key={item.id} className="item-card" style={{
-                    background: `linear-gradient(135deg, rgba(22,33,62,0.8), ${color}15)`,
-                    borderRadius: '12px', padding: '14px', textAlign: 'center',
-                    border: `1px solid ${color}40`, transition: 'all 0.3s ease'
-                  }}>
-                    <img src={item.image || FALLBACK_IMAGE} alt={item.name} style={{ width: '100%', height: '50px', objectFit: 'contain', marginBottom: '6px' }} />
-                    <p style={{ fontSize: '11px', color, fontWeight: 'bold', marginBottom: '4px', lineHeight: 1.3 }}>{item.name}</p>
-                    <p style={{ fontSize: '12px', color: '#e94560', fontWeight: 'bold' }}>{getPrice(item)} ₽</p>
-                    <p style={{ fontSize: '10px', color: '#555', marginTop: '3px' }}>{item.chance}%</p>
-                  </div>
+  background: `linear-gradient(145deg, rgba(8,10,24,0.98), rgba(18,22,45,0.95))`,
+  borderRadius: '16px', padding: '0', textAlign: 'center',
+  border: `1px solid ${color}50`, borderBottom: `3px solid ${color}`,
+  transition: 'all 0.3s ease', position: 'relative', overflow: 'hidden',
+  boxShadow: `0 4px 20px ${color}10`
+}}
+onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 12px 40px ${color}35` }}
+onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 4px 20px ${color}10` }}
+>
+  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${color}, transparent)` }} />
+  <div style={{ background: `linear-gradient(180deg, ${color}18 0%, transparent 100%)`, padding: '20px 16px 12px' }}>
+    <img src={item.image || FALLBACK_IMAGE} alt={item.name} style={{ width: '100%', height: '70px', objectFit: 'contain', filter: `drop-shadow(0 4px 16px ${color}90)` }} />
+  </div>
+  <div style={{ padding: '0 12px 14px' }}>
+    <div style={{ display: 'inline-block', background: `${color}20`, border: `1px solid ${color}40`, borderRadius: '20px', padding: '2px 10px', marginBottom: '8px' }}>
+      <span style={{ color, fontSize: '9px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase' }}>{item.rarity}</span>
+    </div>
+    <p style={{ fontSize: '11px', color: '#d0d0d0', fontWeight: '600', marginBottom: '6px', lineHeight: 1.3 }}>{item.name}</p>
+    <p style={{ fontSize: '14px', color, fontWeight: '800', marginBottom: '6px', fontFamily: 'monospace' }}>{getPrice(item)} ₽</p>
+    <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '6px', padding: '3px 8px', display: 'inline-block' }}>
+      
+    </div>
+  </div>
+</div>
                 )
               })}
             </div>
