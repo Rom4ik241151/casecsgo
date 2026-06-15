@@ -66,14 +66,14 @@ async function fetchNameAndImage(marketHash: string): Promise<{ name: string; im
 
   return { name: marketHash, image: FALLBACK_IMAGE }
 }
-const RARITY_MAP: Record<string, { value: string; color: string }> = {
-  'Consumer Grade':    { value: 'Consumer',   color: '#b0b0b0' },
-  'Industrial Grade':  { value: 'Industrial', color: '#5e98d9' },
-  'Mil-Spec Grade':    { value: 'Mil-Spec',   color: '#4b69ff' },
-  'Restricted':        { value: 'Restricted', color: '#8847ff' },
-  'Classified':        { value: 'Classified', color: '#d32ce6' },
-  'Covert':            { value: 'Covert',     color: '#eb4b4b' },
-  'Contraband':        { value: 'Contraband', color: '#e4ae39' },
+const RARITY_MAP: Record<string, { rarity: string; color: string }> = {
+  'Consumer Grade':    { rarity: 'Consumer',   color: '#b0b0b0' },
+  'Industrial Grade':  { rarity: 'Industrial', color: '#5e98d9' },
+  'Mil-Spec Grade':    { rarity: 'Mil-Spec',   color: '#4b69ff' },
+  'Restricted':        { rarity: 'Restricted', color: '#8847ff' },
+  'Classified':        { rarity: 'Classified', color: '#d32ce6' },
+  'Covert':            { rarity: 'Covert',     color: '#eb4b4b' },
+  'Contraband':        { rarity: 'Contraband', color: '#e4ae39' },
 }
 
 async function fetchRarity(marketHash: string): Promise<{ rarity: string; color: string }> {
