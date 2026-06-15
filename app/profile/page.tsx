@@ -63,18 +63,16 @@ export default function ProfilePage() {
       .finally(() => setLoading(false))
   }
   const loadGhostItems = () => {
-    fetch('/api/items?limit=40')
-  .then(r => r.json())
-  .then(data => {
-    if (Array.isArray(data)) {
-      const shuffled = data.sort(() => Math.random() - 0.5)
-      setGhostItems(shuffled.slice(0, 8))
-    }
-  })
-      .then(r => r.json())
-      .then(data => { if (Array.isArray(data)) setGhostItems(data.slice(0, 8)) })
-      .catch(() => {})
-  }
+  fetch('/api/items?limit=40')
+    .then(r => r.json())
+    .then(data => {
+      if (Array.isArray(data)) {
+        const shuffled = data.sort(() => Math.random() - 0.5)
+        setGhostItems(shuffled.slice(0, 8))
+      }
+    })
+    .catch(() => {})
+}
 
   const loadStats = () => {
     if (!steamId) return
