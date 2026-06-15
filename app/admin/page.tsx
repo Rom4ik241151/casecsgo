@@ -20,6 +20,34 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const WEAPONS = [
+  'Все', 'AK-47', 'M4A4', 'M4A1-S', 'AWP', 'Desert Eagle', 'USP-S', 'Glock-18',
+  'P250', 'Five-SeveN', 'Tec-9', 'CZ75-Auto', 'P2000', 'Dual Berettas', 'R8 Revolver',
+  'MP7', 'MP9', 'MAC-10', 'PP-Bizon', 'P90', 'UMP-45', 'MP5-SD', 'FAMAS', 'Galil AR',
+  'AUG', 'SG 553', 'G3SG1', 'SCAR-20', 'SSG 08', 'Nova', 'MAG-7', 'Sawed-Off',
+  'XM1014', 'M249', 'Negev', 'Нож',
+]
+const [selectedWeapon, setSelectedWeapon] = useState('Все')
+const [rarityLoading, setRarityLoading] = useState(false)
+const [rarityResult, setRarityResult] = useState('')
+
+const updateRarities = async () => {
+  setRarityLoading(true)
+  setRarityResult('')
+  try {
+    const res = await fetch('/api/items', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'update-rarities', weapon: selectedWeapon, batchSize: 9999 }),
+    })
+    const data = await res.json()
+    setRarityResult(`✅ Обновлено: ${data.updated}`)
+  } catch {
+    setRarityResult('❌ Ошибка')
+  } finally {
+    setRarityLoading(false)
+  }
+}
 
   const fetchItems = async () => {
     const res = await fetch('/api/items')
@@ -97,6 +125,25 @@ export default function AdminPage() {
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
       {success && <p style={{ color: 'green' }}>{success}</p>}
+      <div style={{ margin: '1.5rem 0', padding: '1rem', border: '1px solid #333', borderRadius: 8 }}>
+  <h2 style={{ marginBottom: '0.75rem', fontSize: '1rem' }}>Обновить редкости по оружию</h2>
+  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.75rem' }}>
+    {WEAPONS.map(w => (
+      <button key={w} onClick={() => setSelectedWeapon(w)} style={{
+        padding: '0.25rem 0.6rem', fontSize: '0.8rem', cursor: 'pointer',
+        background: selectedWeapon === w ? '#4b69ff' : '#222',
+        color: '#fff', border: '1px solid #444', borderRadius: 6,
+      }}>{w}</button>
+    ))}
+  </div>
+  <button onClick={updateRarities} disabled={rarityLoading} style={{
+    padding: '0.5rem 1.25rem', cursor: 'pointer', background: '#e94560',
+    color: '#fff', border: 'none', borderRadius: 6,
+  }}>
+    {rarityLoading ? 'Обновляю...' : `Обновить: ${selectedWeapon}`}
+  </button>
+  {rarityResult && <p style={{ marginTop: '0.5rem', color: 'green' }}>{rarityResult}</p>}
+</div>
 
       <div style={{
         display: 'grid',

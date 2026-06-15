@@ -18,6 +18,7 @@ export async function GET() {
   price: d.price,
   color: d.color,
   caseName: d.caseName,
+  image: d.image || null,
   username: d.user?.username || 'Игрок',
   avatar: d.user?.avatar || null,
   steamId: d.user?.steamId || null,

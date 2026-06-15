@@ -70,6 +70,8 @@ const [rarityFilter, setRarityFilter] = useState<string>('all')
   const [localImages, setLocalImages] = useState<string[]>([])
   const [imageMode, setImageMode] = useState<'url' | 'local'>('url')
   const [rtpValue, setRtpValue] = useState(60)
+  const [itemCount, setItemCount] = useState(10)
+const [showTips, setShowTips] = useState(false)
 
   const fetchCases = async () => {
     const res = await fetch('/api/cases')
@@ -169,46 +171,61 @@ const [rarityFilter, setRarityFilter] = useState<string>('all')
     setDeleteConfirm(null)
     fetchCases()
   }
-  const autoFillCase = () => {
-  if (!price || allItems.length === 0) return
+  const autoFillCase = (currentPrice: number, currentRtp: number, currentCount?: number) => {
+  const count = currentCount ?? itemCount
+  if (!currentPrice || allItems.length === 0) return
 
-  const validItems = allItems.filter(i => i.price > 0)
+  const minPercent = currentPrice <= 100 ? 0.4 : currentPrice <= 500 ? 0.25 : currentPrice <= 1000 ? 0.15 : 0.1
+const validItems = allItems.filter(i => i.price >= currentPrice * minPercent && i.price <= currentPrice * 6)
 
+  const total = count
 const ranges = [
-  { min: 0, max: price * 0.3, count: 3 },
-  { min: price * 0.3, max: price * 0.8, count: 3 },
-  { min: price * 0.8, max: price * 1.5, count: 2 },
-  { min: price * 1.5, max: price * 4, count: 1 },
-  { min: price * 4, max: price * 50, count: 1 },
+  { min: currentPrice * 0.15, max: currentPrice * 0.4,  count: Math.round(total * 0.3) },
+  { min: currentPrice * 0.4,  max: currentPrice * 0.8,  count: Math.round(total * 0.25) },
+  { min: currentPrice * 0.8,  max: currentPrice * 1.5,  count: Math.round(total * 0.2) },
+  { min: currentPrice * 1.5,  max: currentPrice * 3.0,  count: Math.round(total * 0.15) },
+  { min: currentPrice * 3.0,  max: currentPrice * 5.5,  count: Math.round(total * 0.1) },
 ]
 
-const picked: Item[] = []
-for (const r of ranges) {
-  const candidates = validItems.filter(i => i.price >= r.min && i.price < r.max && !picked.find(p => p.id === i.id))
-  const shuffled = [...candidates].sort(() => Math.random() - 0.5)
-  picked.push(...shuffled.slice(0, r.count))
-}
+  const picked: Item[] = []
+  for (const r of ranges) {
+    const candidates = validItems.filter(i => i.price >= r.min && i.price < r.max && !picked.find(p => p.id === i.id))
+    const shuffled = [...candidates].sort(() => Math.random() - 0.5)
+    picked.push(...shuffled.slice(0, r.count))
+  }
 
   if (picked.length === 0) return
 
-  const sumInv = picked.reduce((s, i) => s + 1 / i.price, 0)
-  const d1 = picked.map(i => (1 / i.price) / sumInv * 100)
+  const target = currentPrice * (currentRtp / 100)
+  const n = picked.length
+  const avgPrice = picked.reduce((s, i) => s + i.price, 0) / n
 
-  const sumPrice = picked.reduce((s, i) => s + i.price, 0)
-  const d2 = picked.map(i => i.price / sumPrice * 100)
+  // Базовые веса: дешёвым больше шанс
+  const weights = picked.map(i => 1 / i.price)
+  const totalWeight = weights.reduce((s, w) => s + w, 0)
+  const baseRates = weights.map(w => w / totalWeight)
+  const baseEV = picked.reduce((s, item, idx) => s + baseRates[idx] * item.price, 0)
 
-  const e1 = picked.reduce((s, i, idx) => s + (d1[idx] / 100) * i.price, 0)
-  const e2 = picked.reduce((s, i, idx) => s + (d2[idx] / 100) * i.price, 0)
+  // Смешиваем базовые веса с равномерными чтобы попасть в target EV
+  // target = alpha * baseEV + (1 - alpha) * avgPrice
+  const alpha = (target - avgPrice) / (baseEV - avgPrice)
+  const clampedAlpha = Math.max(-5, Math.min(5, alpha))
 
-  const target = price * (rtpValue / 100)
-  let t = e2 !== e1 ? (e2 - target) / (e2 - e1) : 0.5
-  t = Math.max(0, Math.min(1, t))
+  const rawRates = picked.map((_, idx) =>
+    clampedAlpha * baseRates[idx] + (1 - clampedAlpha) * (1 / n)
+  )
+
+  const clampedRates = rawRates.map(r => Math.max(0.001, r))
+  const totalClamped = clampedRates.reduce((s, r) => s + r, 0)
+  const finalRates = clampedRates.map(r => r / totalClamped)
 
   setSelectedItems(picked.map((item, idx) => ({
     itemId: item.id,
-    dropRate: parseFloat((t * d1[idx] + (1 - t) * d2[idx]).toFixed(2)),
+    dropRate: parseFloat((finalRates[idx] * 100).toFixed(2)),
   })))
 }
+
+  
 
   const filteredItems = allItems
   .filter(i => i.name.toLowerCase().includes(itemSearch.toLowerCase()))
@@ -235,7 +252,7 @@ for (const r of ranges) {
   // ── ФОРМА ──
   if (mode === 'create' || mode === 'edit') {
     return (
-      <div style={{ padding: '2rem', maxWidth: 900, margin: '0 auto', color: 'var(--color-text-primary)' }}>
+      <div style={{ padding: '2rem', maxWidth: 1300, margin: '0 auto', color: 'var(--color-text-primary)' }}>
 
         {/* Шапка */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -297,6 +314,31 @@ for (const r of ranges) {
             display: 'flex', flexDirection: 'column', gap: '1rem'
           }}>
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 500 }}>Данные кейса</h2>
+            <div>
+  <button onClick={() => setShowTips(p => !p)} style={{
+    background: 'rgba(75,105,255,0.08)', border: '0.5px solid #4b69ff44',
+    borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 12,
+    color: '#4b69ff', marginBottom: showTips ? 8 : 0, width: '100%', textAlign: 'left'
+  }}>
+    💡 Советы по РТП {showTips ? '▲' : '▼'}
+  </button>
+  {showTips && <div style={{
+    background: 'rgba(75,105,255,0.08)', border: '0.5px solid #4b69ff44',
+    borderRadius: 10, padding: '12px 16px', fontSize: 12,
+    color: 'var(--color-text-secondary)', lineHeight: 1.7
+  }}>
+    • Дешёвые кейсы делай с <b style={{ color: '#4caf50' }}>высоким РТП</b> — игрок чувствует что везёт и остаётся<br/>
+    • Дорогие кейсы с <b style={{ color: '#e94560' }}>низким РТП</b> — основной заработок сайта<br/><br/>
+    <b style={{ color: 'var(--color-text-primary)' }}>📦 Рекомендуемый РТП:</b><br/>
+    • До 50₽ → <b style={{ color: '#4caf50' }}>70%</b> · 50–100₽ → <b style={{ color: '#4caf50' }}>65%</b> · 100–200₽ → <b style={{ color: '#e4ae39' }}>60%</b><br/>
+    • 200–500₽ → <b style={{ color: '#e4ae39' }}>55%</b> · 500–1000₽ → <b style={{ color: '#e94560' }}>50%</b> · 1000₽+ → <b style={{ color: '#e94560' }}>45%</b><br/><br/>
+    <b style={{ color: 'var(--color-text-primary)' }}>🎯 Количество предметов:</b><br/>
+    • 5–8 предметов — кейс выглядит эксклюзивно, каждый предмет ценнее<br/>
+    • 10–15 предметов — оптимально, хороший баланс разнообразия<br/>
+    • 20+ предметов — много мусора, игрок чувствует что шанс на крутое мал<br/><br/>
+    
+  </div>}
+</div>
 
             <div>
               <label style={{ fontSize: 13, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }}>Название</label>
@@ -338,7 +380,7 @@ for (const r of ranges) {
                 style={{ width: 56, padding: '4px 6px', fontSize: 12, borderRadius: 6, border: '0.5px solid var(--color-border-tertiary)', background: 'var(--color-background-secondary)', color: 'var(--color-text-primary)', textAlign: 'center' }}
               />
               <button
-                onClick={autoFillCase}
+                onClick={() => autoFillCase(price, rtpValue, itemCount)}
                 disabled={!price}
                 style={{ fontSize: 13, padding: '6px 14px', borderRadius: 8, cursor: price ? 'pointer' : 'not-allowed', background: 'rgba(75,105,255,0.15)', border: '0.5px solid #4b69ff66', color: '#4b69ff', opacity: price ? 1 : 0.5 }}
               >🪄 Авто-наполнение</button>
@@ -346,6 +388,26 @@ for (const r of ranges) {
                 Подберёт предметы из базы и выставит шансы так, чтобы средняя выдача была ≈{rtpValue}% от цены кейса
               </span>
             </div>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+  <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>Предметов:</span>
+  {[5, 10, 15, 20].map(n => (
+    <button key={n} onClick={() => setItemCount(n)} style={{
+      padding: '4px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 12, border: 'none',
+      background: itemCount === n ? '#4b69ff' : 'var(--color-background-secondary)',
+      color: itemCount === n ? '#fff' : 'var(--color-text-secondary)'
+    }}>{n}</button>
+  ))}
+  <input
+    type="number" min={1} max={50} value={itemCount}
+    onChange={e => setItemCount(parseInt(e.target.value) || 10)}
+    style={{
+      width: 52, padding: '4px 6px', fontSize: 12, borderRadius: 6,
+      border: '0.5px solid var(--color-border-tertiary)',
+      background: 'var(--color-background-secondary)',
+      color: 'var(--color-text-primary)', textAlign: 'center'
+    }}
+  />
+</div>
 
               {/* Картинка кейса — URL или из папки */}
               <div>
@@ -445,7 +507,11 @@ for (const r of ranges) {
             {/* Выбранные предметы */}
             {selectedItems.length > 0 && (
               <div style={{ marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {selectedItems.map(si => {
+                {[...selectedItems].sort((a, b) => {
+  const itemA = allItems.find(i => i.id === a.itemId)
+  const itemB = allItems.find(i => i.id === b.itemId)
+  return (itemA?.price ?? 0) - (itemB?.price ?? 0)
+}).map(si => {
                   const item = allItems.find(i => i.id === si.itemId)
                   if (!item) return null
                   const color = item.color || rarityColor(item.rarity)
@@ -513,70 +579,9 @@ for (const r of ranges) {
   <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-secondary)' }}>Добавить предметы из базы:</p>
   {selectedItems.length > 1 && (
   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-    <button
-      onClick={() => {
-        const equal = parseFloat((100 / selectedItems.length).toFixed(1))
-        setSelectedItems(prev => prev.map(x => ({ ...x, dropRate: equal })))
-      }}
-      style={{
-        fontSize: 12, padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
-        background: 'rgba(75,105,255,0.15)', border: '0.5px solid #4b69ff66',
-        color: '#4b69ff'
-      }}
-    >⚖️ Поровну</button>
+    
 
-    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-      <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>РТП %:</span>
-      <input
-        type="number"
-        min={10}
-        max={95}
-        value={rtpValue}
-onChange={e => setRtpValue(parseFloat(e.target.value) || 60)}
-        style={{
-          width: 56, padding: '3px 6px', fontSize: 12,
-          borderRadius: 6, border: '0.5px solid var(--color-border-tertiary)',
-          background: 'var(--color-background-primary)',
-          color: 'var(--color-text-primary)', textAlign: 'center'
-        }}
-      />
-      <button
-        onClick={() => {
-          if (!price || selectedItems.length === 0) return
-          const items = selectedItems
-            .map(si => ({ si, item: allItems.find(i => i.id === si.itemId) }))
-            .filter(x => x.item && x.item.price > 0) as { si: typeof selectedItems[0]; item: Item }[]
-
-          const n = items.length
-          if (n === 0) return
-
-          const sumInv = items.reduce((s, x) => s + 1 / x.item.price, 0)
-          const d1 = items.map(x => (1 / x.item.price) / sumInv * 100)
-
-          const sumPrice = items.reduce((s, x) => s + x.item.price, 0)
-          const d2 = items.map(x => x.item.price / sumPrice * 100)
-
-          const e1 = items.reduce((s, x, i) => s + (d1[i] / 100) * x.item.price, 0)
-          const e2 = items.reduce((s, x, i) => s + (d2[i] / 100) * x.item.price, 0)
-
-          const target = price * (rtpValue / 100)
-          let t = e2 !== e1 ? (e2 - target) / (e2 - e1) : 0.5
-          t = Math.max(0, Math.min(1, t))
-
-          const newItems = items.map((x, i) => ({
-            itemId: x.si.itemId,
-            dropRate: parseFloat((t * d1[i] + (1 - t) * d2[i]).toFixed(2)),
-          }))
-
-          setSelectedItems(newItems)
-        }}
-        style={{
-          fontSize: 12, padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
-          background: 'rgba(233,69,96,0.15)', border: '0.5px solid #e9456066',
-          color: '#e94560'
-        }}
-      >🎯 Авто-РТП</button>
-    </div>
+    
   </div>
 )}
 </div>

@@ -20,19 +20,18 @@ setSteamUser: (user) => set({ steamUser: user }),
   caseOfTheDay: null,
 
   // ====== BALANCE ======
-  addBalance: (amount) =>
-  set((state) => {
-    const newBalance = state.balance + amount
-    const steamUser = state.steamUser
-    if (steamUser?.steamId) {
-      fetch('/api/user', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ steamId: steamUser.steamId, balance: newBalance })
-      })
-    }
-    return { balance: newBalance }
-  }),
+  addBalance: (amount) => {
+  const state = get()
+  const newBalance = state.balance + amount
+  set({ balance: newBalance })
+  if (state.steamUser?.steamId) {
+    fetch('/api/user', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ steamId: state.steamUser.steamId, balance: newBalance })
+    }).catch(() => {})
+  }
+},
 
   // ====== DROPS ======
   addDrop: (item, caseName) =>
@@ -93,19 +92,19 @@ setSteamUser: (user) => set({ steamUser: user }),
 
   setBalance: (balance) => set({ balance }),
 
-  sellItem: (item) =>
-  set((state) => {
-    const newBalance = state.balance + item.price
-    const steamUser = state.steamUser
-    if (steamUser?.steamId) {
-      fetch('/api/user', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ steamId: steamUser.steamId, balance: newBalance })
-      })
-    }
-    return { balance: newBalance, totalEarned: state.totalEarned + item.price }
-  }),
+  sellItem: (item) => {
+  const state = get()
+  const newBalance = state.balance + item.price
+  set({ balance: newBalance, totalEarned: state.totalEarned + item.price })
+  if (state.steamUser?.steamId) {
+    fetch('/api/user', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ steamId: state.steamUser.steamId, balance: newBalance })
+    }).catch(() => {})
+  }
+},
+        
 
   // ====== EXPERIENCE / LEVEL ======
   addExperience: () =>

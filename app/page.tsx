@@ -124,7 +124,7 @@ useEffect(() => {
     if (activeFilter === 'Средние') return c.price >= 70 && c.price < 150
     if (activeFilter === 'Дорогие') return c.price >= 150
     return true
-  })
+  }).sort((a, b) => a.price - b.price)
 
   const dailyCase = cases.length > 0
     ? cases[Math.floor(Date.now() / 86400000) % cases.length]
@@ -302,37 +302,36 @@ useEffect(() => {
 
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {/* Хиро */}
-          <div style={{ position: 'relative', padding: '60px 40px', textAlign: 'center', overflow: 'hidden' }}>
+          <div style={{ position: 'relative', padding: '22px 40px', textAlign: 'center', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'url(/bg.png) center/cover no-repeat' }} />
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)' }} />
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <p style={{ color: '#e94560', fontSize: '13px', letterSpacing: '4px', marginBottom: '15px', fontWeight: 'bold' }}>★ CSGO CASE OPENING ★</p>
-              <h1 style={{ fontSize: '52px', fontWeight: 'bold', lineHeight: 1.2, marginBottom: '20px', color: '#fff' }}>
-                Открывай кейсы и<br />
-                <span style={{ background: 'linear-gradient(135deg, #e94560, #ff6b6b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                  выигрывай скины!
-                </span>
-              </h1>
-              <p style={{ color: '#aaa', marginBottom: '35px', fontSize: '15px' }}>
-                Честные шансы • Мгновенные выплаты • {casesLoading ? '...' : cases.length} кейсов
-              </p>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)' }} />
+            <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
+              <div style={{ textAlign: 'left' }}>
+                <p style={{ color: '#e94560', fontSize: '11px', letterSpacing: '3px', marginBottom: '6px', fontWeight: 'bold' }}>★ CSGO CASE OPENING ★</p>
+                <h1 style={{ fontSize: '26px', fontWeight: 'bold', margin: 0, color: '#fff' }}>
+                  Открывай кейсы и{' '}
+                  <span style={{ background: 'linear-gradient(135deg, #e94560, #ff6b6b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    выигрывай скины!
+                  </span>
+                </h1>
+              </div>
 
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '70px' }}>
+              <div style={{ display: 'flex', gap: '36px' }}>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#e94560' }}>
+                  <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#e94560' }}>
                     {casesLoading ? '...' : `${cases.length}+`}
                   </div>
-                  <div style={{ fontSize: '13px', color: '#888' }}>Кейсов</div>
+                  <div style={{ fontSize: '11px', color: '#888' }}>Кейсов</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#e94560', display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
-                    {online}<span style={{ fontSize: '14px', color: '#4caf50' }}>●</span>
+                  <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#e94560', display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
+                    {online}<span style={{ fontSize: '12px', color: '#4caf50' }}>●</span>
                   </div>
-                  <div style={{ fontSize: '13px', color: '#888' }}>Игроков онлайн</div>
+                  <div style={{ fontSize: '11px', color: '#888' }}>Онлайн</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#e94560' }}>{totalOpened}</div>
-                  <div style={{ fontSize: '13px', color: '#888' }}>Открытий</div>
+                  <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#e94560' }}>{totalOpened}</div>
+                  <div style={{ fontSize: '11px', color: '#888' }}>Открытий</div>
                 </div>
               </div>
             </div>
@@ -419,9 +418,9 @@ useEffect(() => {
 
             {/* Скелетон / Сетка кейсов */}
             {casesLoading ? (
-              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '40px' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '32px' }}>
                 {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="skeleton" style={{ width: '200px', height: '260px' }} />
+                  <div key={i} className="skeleton" style={{ width: '380px', height: '460px' }} />
                 ))}
               </div>
             ) : filteredCases.length === 0 ? (
@@ -429,55 +428,72 @@ useEffect(() => {
                 Кейсов не найдено
               </div>
             ) : (
-              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '40px', marginTop: '20px' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '32px', marginTop: '20px' }}>
                 {filteredCases.map((c) => {
                   const color = getCaseColor(c)
                   return (
                     <div
                       key={c.id}
                       onClick={() => router.push('/case/' + c.id)}
-                      style={{ cursor: 'pointer', textAlign: 'center', width: '220px', transition: 'transform 0.2s ease' }}
-                      onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
-                      onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                      style={{
+                        cursor: 'pointer', textAlign: 'center', width: '380px',
+                        padding: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      }}
                     >
+                      {/* Название + предметы — над картинкой */}
+                      <div style={{ marginBottom: '2px', width: '100%' }}>
+                        <div style={{
+                          fontSize: 'clamp(13px, 4vw, 18px)', fontWeight: '800', color: '#fff',
+                          textTransform: 'uppercase', letterSpacing: '0.5px',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {c.name}
+                        </div>
+                        <div style={{ color: '#888', fontSize: '13px', marginTop: '0px' }}>
+                          {c.items?.length || 0} предметов
+                        </div>
+                      </div>
+
+                      {/* Картинка — увеличивается при наведении */}
                       {c.image ? (
                         <img
                           src={c.image}
                           alt={c.name}
                           style={{
-                            width: '200px', height: '200px', objectFit: 'contain',
-                            marginBottom: '12px',
-                            filter: `drop-shadow(0 8px 20px ${color}60)`,
-                            borderRadius: '50px', transition: 'all 0.25s ease'
+                            width: '100%', height: '220px', objectFit: 'cover',
+                            marginBottom: '0px',
+                            borderRadius: '14px', transition: 'transform 0.25s ease'
                           }}
-                          onMouseEnter={e => e.currentTarget.style.filter = `drop-shadow(0 0 25px ${color})`}
-                          onMouseLeave={e => e.currentTarget.style.filter = `drop-shadow(0 8px 20px ${color}60)`}
+                          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
+                          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                         />
                       ) : (
                         <div style={{
-                          width: '200px', height: '200px', marginBottom: '12px',
+                          width: '100%', height: '360px', marginBottom: '8px',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '80px', borderRadius: '50px',
+                          fontSize: '90px', borderRadius: '14px',
                           background: `radial-gradient(circle, ${color}22, transparent)`,
                           border: `1px solid ${color}40`,
-                          transition: 'all 0.25s ease'
-                        }}>📦</div>
+                          transition: 'transform 0.25s ease'
+                        }}
+                          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
+                          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                        >📦</div>
                       )}
-                      <div style={{
-                        fontSize: '16px', fontWeight: 'bold',
-                        background: `linear-gradient(135deg, #fff, ${color})`,
-                        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                        marginBottom: '8px'
-                      }}>
-                        {c.name}
+
+                      {/* Цена — под картинкой */}
+                      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '8px' }}>
+                        <div style={{
+                          background: 'linear-gradient(135deg, #e94560, #ff6b6b)',
+                          color: '#fff', fontWeight: '800', fontSize: '15px',
+                          padding: '5px 20px', borderRadius: '8px',
+                          boxShadow: '0 0 16px rgba(233,69,96,0.6)',
+                        }}>
+                          {c.price} ₽
+                        </div>
                       </div>
-                      <div style={{
-                        fontSize: '22px', fontWeight: 'bold',
-                        background: `linear-gradient(135deg, ${color}, ${color}cc)`,
-                        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
-                      }}>
-                        {c.price} ₽
-                      </div>
+
+                      
                     </div>
                   )
                 })}

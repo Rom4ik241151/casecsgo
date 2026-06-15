@@ -10,7 +10,18 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         name: body.name,
         image: body.image,
         price: body.price,
-        rarity: body.rarity,  // ← вот сюда
+        rarity: body.rarity,
+        condition: body.condition,
+        statTrak: body.statTrak,
+        color: ({
+          'Consumer':   '#b0b0b0',
+          'Industrial': '#5e98d9',
+          'Mil-Spec':   '#4b69ff',
+          'Restricted': '#8847ff',
+          'Classified': '#d32ce6',
+          'Covert':     '#eb4b4b',
+          'Contraband': '#e4ae39',
+        } as Record<string, string>)[body.rarity] ?? '#888888',
       },
     })
     return NextResponse.json(item)

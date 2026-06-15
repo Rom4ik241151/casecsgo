@@ -16,7 +16,7 @@ interface Item {
   condition?: string
 }
 
-type Mode = 'list' | 'create' | 'edit' | 'bulk'
+type Mode = 'list' | 'create' | 'edit' | 'bulk' | 'rarity'
 
 const proxyImage = (url: string) => `/api/image-proxy?url=${encodeURIComponent(url)}`
 
@@ -72,12 +72,15 @@ export default function AdminItemsPage() {
 
   const [updatingPrices, setUpdatingPrices] = useState(false)
   const [updateResult, setUpdateResult] = useState('')
+  const [updatingRarities, setUpdatingRarities] = useState(false)
+  const [rarityResult, setRarityResult] = useState('')
 
   // Bulk
   const [bulkUrls, setBulkUrls] = useState('')
   const [bulkProgress, setBulkProgress] = useState<{ url: string; status: 'pending' | 'ok' | 'error'; name?: string }[]>([])
   const [bulkLoading, setBulkLoading] = useState(false)
   const [weaponFilter, setWeaponFilter] = useState('Все')
+  const [rarityWeapon, setRarityWeapon] = useState('Все')
 
   const fetchItems = async () => {
     const res = await fetch('/api/items')
@@ -215,6 +218,45 @@ export default function AdminItemsPage() {
       setUpdatingPrices(false)
     }
   }
+  const handleUpdateRarities = async (weapon: string) => {
+  const count = weapon === 'Все'
+    ? items.length
+    : items.filter(i => i.name.includes(weapon)).length
+  if (!confirm(`Обновить редкости ${count} предметов?`)) return
+  setUpdatingRarities(true)
+  setRarityResult('Запускаю...')
+
+  const BATCH = 50
+  let offset = 0
+  let totalUpdated = 0
+  let total = count
+
+  try {
+    while (true) {
+      setRarityResult(`⏳ Обработано ${Math.min(offset + BATCH, total)}/${total}`)
+      const res = await fetch('/api/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'update-rarities', offset, batchSize: BATCH, weapon }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setRarityResult('Ошибка сервера'); break }
+      totalUpdated += data.updated
+      total = data.total
+      if (data.done) {
+        setRarityResult(`✓ Готово! Обновлено: ${totalUpdated}/${total}`)
+        fetchItems()
+        break
+      }
+      offset += BATCH
+      await new Promise(r => setTimeout(r, 2000))
+    }
+  } catch {
+    setRarityResult('Ошибка сети')
+  } finally {
+    setUpdatingRarities(false)
+  }
+}
 
   const handleBulkAdd = async () => {
     const urls = bulkUrls.split(/[\n\s]+/).map(u => u.trim()).filter(u => u.startsWith('http'))
@@ -270,7 +312,66 @@ export default function AdminItemsPage() {
 
   const rarityColor = (r?: string) =>
     RARITIES.find(x => x.value === r)?.color ?? '#888'
+if (mode === 'rarity') {
+  const rarityFilteredCount = rarityWeapon === 'Все'
+    ? items.length
+    : items.filter(i => i.name.includes(rarityWeapon)).length
 
+  return (
+    <div style={{ padding: '2rem', maxWidth: 700, margin: '0 auto', color: 'var(--color-text-primary)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+        <button onClick={() => { setMode('list'); setRarityResult('') }}
+          style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 14, padding: 0 }}>
+          ← Назад
+        </button>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 500 }}>Обновить редкости</h1>
+      </div>
+
+      <div style={{ background: 'var(--color-background-primary)', border: '0.5px solid var(--color-border-tertiary)', borderRadius: 12, padding: '1.5rem' }}>
+        <label style={{ fontSize: 13, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 8 }}>
+          Выбери категорию:
+        </label>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+          {WEAPON_TYPES.map(w => (
+            <button key={w} onClick={() => setRarityWeapon(w)} style={{
+              padding: '0.3rem 0.75rem', fontSize: 12, borderRadius: 20, cursor: 'pointer',
+              border: rarityWeapon === w ? '1px solid #4b69ff' : '0.5px solid var(--color-border-tertiary)',
+              background: rarityWeapon === w ? 'rgba(75,105,255,0.15)' : 'none',
+              color: rarityWeapon === w ? '#4b69ff' : 'var(--color-text-secondary)',
+            }}>{w}</button>
+          ))}
+        </div>
+
+        <div style={{
+          background: 'var(--color-background-secondary)', borderRadius: 8,
+          padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: 13,
+          color: 'var(--color-text-secondary)', border: '0.5px solid var(--color-border-tertiary)'
+        }}>
+          Найдено предметов: <strong style={{ color: 'var(--color-text-primary)' }}>{rarityFilteredCount}</strong>
+        </div>
+
+        <button
+          onClick={() => handleUpdateRarities(rarityWeapon)}
+          disabled={updatingRarities || rarityFilteredCount === 0}
+          style={{
+            padding: '0.65rem 1.5rem', background: '#4b69ff', color: '#fff',
+            border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14,
+            opacity: updatingRarities || rarityFilteredCount === 0 ? 0.6 : 1
+          }}
+        >
+          {updatingRarities ? 'Обновляю...' : `🎨 Обновить редкости (${rarityFilteredCount})`}
+        </button>
+
+        {rarityResult && (
+          <p style={{
+            marginTop: '1rem', fontSize: 13, margin: '1rem 0 0',
+            color: rarityResult.startsWith('✓') ? '#4caf50' : rarityResult.startsWith('Ошибка') ? '#eb4b4b' : 'var(--color-text-secondary)'
+          }}>{rarityResult}</p>
+        )}
+      </div>
+    </div>
+  )
+}
   // ── BULK ──
   if (mode === 'bulk') {
     const done = bulkProgress.filter(p => p.status !== 'pending').length
@@ -502,6 +603,20 @@ export default function AdminItemsPage() {
           {updateResult && (
             <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{updateResult}</span>
           )}
+          {rarityResult && (
+  <span style={{
+    fontSize: 12,
+    color: rarityResult.startsWith('✓') ? '#4caf50' : rarityResult.startsWith('Ошибка') ? '#eb4b4b' : 'var(--color-text-secondary)',
+    background: 'var(--color-background-secondary)',
+    border: '0.5px solid var(--color-border-tertiary)',
+    borderRadius: 8, padding: '0.4rem 0.75rem',
+  }}>{rarityResult}</span>
+)}
+          <button onClick={() => { setRarityWeapon('Все'); setRarityResult(''); setMode('rarity') }} disabled={updatingRarities}
+  style={{ padding: '0.6rem 1.25rem', background: 'none', border: '0.5px solid var(--color-border-tertiary)', borderRadius: 8, cursor: 'pointer', fontSize: 14, color: 'var(--color-text-secondary)' }}>
+  🎨 Обновить редкости
+</button>
+            
           <button onClick={handleUpdatePrices} disabled={updatingPrices}
             style={{ padding: '0.6rem 1.25rem', background: 'none', border: '0.5px solid var(--color-border-tertiary)', borderRadius: 8, cursor: 'pointer', fontSize: 14, color: 'var(--color-text-secondary)' }}>
             {updatingPrices ? 'Обновляю цены...' : '💱 Обновить цены'}

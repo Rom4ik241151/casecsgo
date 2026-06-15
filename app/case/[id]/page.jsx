@@ -343,6 +343,7 @@ useEffect(() => {
             price: item.price,
             color: getColor(item),
             caseName: caseData.name,
+            image: item.image || null,
             steamId: useStore.getState().steamUser?.steamId || null
           })
         }).catch(() => {})

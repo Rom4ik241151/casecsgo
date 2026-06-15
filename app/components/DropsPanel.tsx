@@ -42,7 +42,7 @@ export default function DropsPanel() {
 
   return (
     <div style={{
-      width: '260px', flexShrink: 0,
+      width: '200px', flexShrink: 0,
       background: `linear-gradient(rgba(5,5,20,0.82), rgba(5,5,20,0.82)), url(/bg2.png) top/cover no-repeat`,
       borderRight: '1px solid rgba(233,69,96,0.15)',
       overflowY: 'auto', overflowX: 'hidden',
@@ -122,22 +122,58 @@ export default function DropsPanel() {
             }} />
 
             {/* Обычный вид */}
-            {!isHovered && (
+            {!isHovered && !isUpgrade && (
+              <div style={{
+                position: 'absolute', inset: 0, zIndex: 1,
+                overflow: 'hidden', borderRadius: '0',
+                border: `1px solid ${color}60`,
+                boxShadow: `inset 0 0 20px ${color}20, 0 0 15px ${color}30`,
+              }}>
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: `radial-gradient(ellipse at center, ${color}15 0%, transparent 70%)`,
+                  zIndex: 0,
+                }} />
+                {item.image && (
+                  <img
+                    src={`/api/image-proxy?url=${encodeURIComponent(item.image)}`}
+                    alt={item.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', filter: `drop-shadow(0 0 12px ${color})`, position: 'relative', zIndex: 1 }}
+                  />
+                )}
+                <div style={{
+                  position: 'absolute', bottom: 0, left: 0, right: 0,
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)',
+                  padding: '8px 6px 4px',
+                  zIndex: 2,
+                }}>
+                  <p style={{ color: '#fff', fontSize: '9px', fontWeight: '700', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.name}
+                  </p>
+                </div>
+                {i === 0 && (
+                  <span style={{ position: 'absolute', top: 6, right: 6, fontSize: '8px', color: '#4caf50', fontWeight: '900', background: 'rgba(76,175,80,0.15)', padding: '1px 4px', borderRadius: '3px', border: '1px solid rgba(76,175,80,0.3)', zIndex: 3 }}>NEW</span>
+                )}
+              </div>
+            )}
+
+            {/* Обычный вид апгрейда */}
+            {!isHovered && isUpgrade && (
               <div style={{
                 position: 'absolute', inset: 0, zIndex: 1,
                 display: 'flex', alignItems: 'center',
-                gap: '10px', padding: '0 12px 0 14px',
+                gap: '8px', padding: '0 10px 0 12px',
               }}>
                 <div style={{
-                  width: '52px', height: '52px', borderRadius: '50%',
+                  width: '42px', height: '42px', borderRadius: '50%',
                   overflow: 'hidden', flexShrink: 0,
                   border: `1.5px solid ${color}60`,
                   boxShadow: `0 0 8px ${color}30`,
                   background: `${color}20`,
                 }}>
                   {item.avatar
-                    ? <img src={item.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>👤</div>
+                    ? <img src={`/api/image-proxy?url=${encodeURIComponent(item.avatar)}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>👤</div>
                   }
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -169,10 +205,14 @@ export default function DropsPanel() {
                     </>
                   ) : (
                     <>
-                      <p style={{ fontSize: '14px', fontWeight: '800', color, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: `0 0 10px ${color}80` }}>
+                      <div style={{ width: '60px', height: '45px', marginBottom: '4px' }}>
+                        {item.image && (
+                          <img src={`/api/image-proxy?url=${encodeURIComponent(item.image)}`} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain', filter: `drop-shadow(0 0 6px ${color}80)` }} />
+                        )}
+                      </div>
+                      <p style={{ fontSize: '11px', fontWeight: '800', color, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: `0 0 10px ${color}80` }}>
                         {item.name}
                       </p>
-                      <p style={{ fontSize: '10px', color: '#444', marginTop: '2px' }}>из {item.caseName}</p>
                     </>
                   )}
                 </div>
@@ -229,7 +269,7 @@ export default function DropsPanel() {
                       cursor: 'pointer', overflow: 'hidden',
                     }}
                   >
-                    {caseImg && <img src={caseImg} alt="" style={{ width: '68px', height: '68px', objectFit: 'contain', animation: 'floatCase 2s ease-in-out infinite', filter: `drop-shadow(0 0 12px ${color})` }} />}
+                    {caseImg && <img src={caseImg} alt="" style={{ width: '54px', height: '54px', objectFit: 'contain', animation: 'floatCase 2s ease-in-out infinite', filter: `drop-shadow(0 0 12px ${color})` }} />}
                     <span style={{
                       fontSize: '11px', fontWeight: '900', letterSpacing: '2px',
                       background: `linear-gradient(90deg, ${color}, #fff, ${color})`,

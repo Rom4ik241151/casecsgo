@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
-  const { name, price, color, caseName, steamId } = await req.json()
+  const { name, price, color, caseName, steamId, image } = await req.json()
   
   let userId = null
   if (steamId) {
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   }
 
   await prisma.drop.create({
-    data: { name, price, color, caseName, userId: userId || 'anonymous' }
+    data: { name, price, color, caseName, image: image || null, userId: userId || 'anonymous' }
   })
 
   const total = await prisma.drop.count()
